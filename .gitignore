@@ -1,0 +1,33 @@
+# Dependencies
+node_modules/
+dist/
+/sfera-gamification-frontend/node_modules/
+/sfera-gamification-frontend/dist/
+
+# Build outputs
+sfera-gamification-backend/target/
+target/
+*.jar
+*.war
+
+# IDEs and editors
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+.project
+.classpath
+.settings/
+.metadata/
+
+# OS files
+Thumbs.db
+desktop.ini
+.DS_Store
+
+# Log files
+*.log
+
+# Temp python script scripts
+*.py

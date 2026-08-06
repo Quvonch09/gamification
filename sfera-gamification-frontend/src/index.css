@@ -1,0 +1,110 @@
+@import "tailwindcss";
+
+/* ============================================
+   THEME VARIABLES
+   ============================================ */
+
+/* Dark mode (default) */
+:root, html.dark {
+  --bg-base:       #020617;   /* slate-950 */
+  --bg-card:       #0f172a;   /* slate-900 */
+  --bg-input:      #1e293b;   /* slate-850 */
+  --bg-border:     #1e293b;   /* slate-800 */
+  --text-primary:  #f1f5f9;   /* slate-100 */
+  --text-secondary:#94a3b8;   /* slate-400 */
+  --text-muted:    #475569;   /* slate-600 */
+  --sidebar-bg:    #020617;
+  --sidebar-text:  #94a3b8;
+  --sidebar-active:#4f46e5;
+  --header-bg:     #0f172a;
+  --scrollbar-thumb: #334155;
+  --table-hover:   rgba(30,41,59,0.3);
+  color-scheme: dark;
+}
+
+/* Light mode */
+html.light {
+  --bg-base:       #f1f5f9;   /* slate-100 */
+  --bg-card:       #ffffff;
+  --bg-input:      #f8fafc;
+  --bg-border:     #e2e8f0;   /* slate-200 */
+  --text-primary:  #0f172a;   /* slate-900 */
+  --text-secondary:#475569;   /* slate-600 */
+  --text-muted:    #94a3b8;   /* slate-400 */
+  --sidebar-bg:    #ffffff;
+  --sidebar-text:  #64748b;
+  --sidebar-active:#4f46e5;
+  --header-bg:     #ffffff;
+  --scrollbar-thumb: #cbd5e1;
+  --table-hover:   rgba(241,245,249,0.8);
+  color-scheme: light;
+}
+
+/* Apply theme variables to base elements */
+body {
+  background-color: var(--bg-base);
+  color: var(--text-primary);
+  transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+/* Light mode input calendar indicator */
+html.light input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(0.3);
+}
+
+/* Light mode utility overrides */
+html.light .bg-slate-950 { background-color: var(--bg-base) !important; }
+html.light .bg-slate-900 { background-color: var(--bg-card) !important; }
+html.light .bg-slate-850 { background-color: var(--bg-input) !important; }
+html.light .bg-slate-800 { background-color: #e2e8f0 !important; }
+html.light .border-slate-800 { border-color: #cbd5e1 !important; }
+html.light .border-slate-700 { border-color: #94a3b8 !important; }
+html.light .text-slate-100 { color: #0f172a !important; }
+html.light .text-slate-200 { color: #1e293b !important; }
+html.light .text-slate-300 { color: #334155 !important; }
+html.light .text-slate-400 { color: #64748b !important; }
+html.light .text-slate-500 { color: #94a3b8 !important; }
+html.light .text-slate-600 { color: #cbd5e1 !important; }
+html.light .text-white    { color: #0f172a !important; }
+html.light .bg-slate-950\/80 { background-color: rgba(15,23,42,0.7) !important; }
+html.light .divide-slate-800\/60 > * + * { border-color: #e2e8f0 !important; }
+html.light .bg-slate-950\/50 { background-color: #f8fafc !important; }
+html.light .hover:bg-slate-850\/30:hover { background-color: #f1f5f9 !important; }
+
+/* Scrollbar styling */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 3px; }
+
+/* Scrollbar hide utility for mobile tab navigation */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Dark date input for mobile browsers */
+input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(0.6);
+  cursor: pointer;
+}
+
+/* Prevent text size adjustment on mobile */
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+/* Better tap targets on mobile */
+button, [role="button"] {
+  touch-action: manipulation;
+}
+
+/* Smooth transitions for theme change */
+*, *::before, *::after {
+  transition-property: background-color, border-color, color;
+  transition-duration: 0.2s;
+  transition-timing-function: ease;
+}
