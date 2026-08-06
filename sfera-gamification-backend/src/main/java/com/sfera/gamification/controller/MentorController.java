@@ -56,7 +56,7 @@ public class MentorController {
     }
 
     @PostMapping
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
     public ResponseEntity<?> createMentor(@RequestBody Map<String, String> request) {
         String fullName = request.get("fullName");
         String username = request.get("username");
@@ -89,7 +89,7 @@ public class MentorController {
     }
 
     @GetMapping("/monitor")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
     public ResponseEntity<?> monitorMentors() {
         List<Mentor> mentors = mentorRepository.findAll();
         List<Map<String, Object>> response = new ArrayList<>();
@@ -143,7 +143,7 @@ public class MentorController {
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
     public ResponseEntity<?> updateMentor(@PathVariable Long id, @RequestBody Map<String, String> request) {
         Mentor mentor = mentorRepository.findById(id).orElse(null);
         if (mentor == null) {
@@ -175,7 +175,7 @@ public class MentorController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
     public ResponseEntity<?> deleteMentor(@PathVariable Long id) {
         Mentor mentor = mentorRepository.findById(id).orElse(null);
         if (mentor == null) {

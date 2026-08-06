@@ -57,19 +57,45 @@ html.light .bg-slate-950 { background-color: var(--bg-base) !important; }
 html.light .bg-slate-900 { background-color: var(--bg-card) !important; }
 html.light .bg-slate-850 { background-color: var(--bg-input) !important; }
 html.light .bg-slate-800 { background-color: #e2e8f0 !important; }
+html.light .border-slate-900 { border-color: #cbd5e1 !important; }
+html.light .border-slate-850 { border-color: #cbd5e1 !important; }
 html.light .border-slate-800 { border-color: #cbd5e1 !important; }
 html.light .border-slate-700 { border-color: #94a3b8 !important; }
+
 html.light .text-slate-100 { color: #0f172a !important; }
 html.light .text-slate-200 { color: #1e293b !important; }
 html.light .text-slate-300 { color: #334155 !important; }
-html.light .text-slate-400 { color: #64748b !important; }
-html.light .text-slate-500 { color: #94a3b8 !important; }
-html.light .text-slate-600 { color: #cbd5e1 !important; }
-html.light .text-white    { color: #0f172a !important; }
-html.light .bg-slate-950\/80 { background-color: rgba(15,23,42,0.7) !important; }
-html.light .divide-slate-800\/60 > * + * { border-color: #e2e8f0 !important; }
-html.light .bg-slate-950\/50 { background-color: #f8fafc !important; }
-html.light .hover:bg-slate-850\/30:hover { background-color: #f1f5f9 !important; }
+html.light .text-slate-400 { color: #475569 !important; }
+html.light .text-slate-500 { color: #64748b !important; }
+html.light .text-slate-600 { color: #94a3b8 !important; }
+
+/* Slate Opacity Backgrounds Overrides */
+html.light .bg-slate-950\/80 { background-color: rgba(241, 245, 249, 0.8) !important; }
+html.light .bg-slate-950\/60 { background-color: rgba(241, 245, 249, 0.6) !important; }
+html.light .bg-slate-950\/50 { background-color: rgba(241, 245, 249, 0.5) !important; }
+html.light .bg-slate-950\/40 { background-color: rgba(241, 245, 249, 0.4) !important; }
+html.light .bg-slate-950\/30 { background-color: rgba(241, 245, 249, 0.3) !important; }
+html.light .bg-slate-950\/20 { background-color: rgba(241, 245, 249, 0.2) !important; }
+
+html.light .bg-slate-900\/95 { background-color: rgba(255, 255, 255, 0.95) !important; }
+html.light .bg-slate-900\/60 { background-color: rgba(255, 255, 255, 0.6) !important; }
+html.light .bg-slate-900\/40 { background-color: rgba(255, 255, 255, 0.4) !important; }
+html.light .bg-slate-900\/30 { background-color: rgba(255, 255, 255, 0.3) !important; }
+
+html.light .bg-slate-800\/60 { background-color: rgba(226, 232, 240, 0.6) !important; }
+html.light .bg-slate-800\/40 { background-color: rgba(226, 232, 240, 0.4) !important; }
+html.light .bg-slate-850\/30 { background-color: rgba(248, 250, 252, 0.3) !important; }
+html.light .bg-slate-850\/20 { background-color: rgba(248, 250, 252, 0.2) !important; }
+
+/* Slate Opacity Borders Overrides */
+html.light .border-slate-800\/80 { border-color: rgba(203, 213, 225, 0.8) !important; }
+html.light .border-slate-800\/60 { border-color: rgba(203, 213, 225, 0.6) !important; }
+html.light .border-slate-800\/50 { border-color: rgba(203, 213, 225, 0.5) !important; }
+html.light .border-slate-700\/50 { border-color: rgba(148, 163, 184, 0.5) !important; }
+html.light .border-slate-700\/80 { border-color: rgba(148, 163, 184, 0.8) !important; }
+
+html.light .divide-slate-800\/60 > * + * { border-color: #cbd5e1 !important; }
+html.light .hover\:bg-slate-850\/30:hover { background-color: #f1f5f9 !important; }
 
 /* Scrollbar styling */
 ::-webkit-scrollbar { width: 6px; height: 6px; }

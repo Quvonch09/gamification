@@ -25,9 +25,46 @@ public class DashboardService {
     @Autowired
     private PointTransactionRepository pointTransactionRepository;
 
-    public Map<String, Object> getDashboardStats() {
-        List<Student> activeStudents = studentRepository.findByStatus("ACTIVE");
-        List<Group> activeGroups = groupRepository.findByStatus("ACTIVE");
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private MentorRepository mentorRepository;
+
+    public Map<String, Object> getDashboardStats(String username) {
+        User user = userRepository.findByUsername(username).orElse(null);
+        if (user == null) {
+            return new HashMap<>();
+        }
+
+        List<Student> activeStudents;
+        List<Group> activeGroups;
+
+        if ("SUPER_ADMIN".equals(user.getRole()) || "ADMIN".equals(user.getRole())) {
+            activeStudents = studentRepository.findByStatus("ACTIVE");
+            activeGroups = groupRepository.findByStatus("ACTIVE");
+        } else if ("MENTOR".equals(user.getRole())) {
+            Mentor mentor = mentorRepository.findByUserId(user.getId()).orElse(null);
+            if (mentor == null) {
+                activeStudents = new ArrayList<>();
+                activeGroups = new ArrayList<>();
+            } else {
+                activeGroups = groupRepository.findByStatus("ACTIVE").stream()
+                        .filter(g -> g.getMentor() != null && g.getMentor().getId().equals(mentor.getId()))
+                        .collect(Collectors.toList());
+                activeStudents = activeGroups.stream()
+                        .flatMap(g -> groupStudentRepository.findByGroupIdAndStatus(g.getId(), "ACTIVE").stream())
+                        .map(GroupStudent::getStudent)
+                        .filter(s -> "ACTIVE".equals(s.getStatus()))
+                        .distinct()
+                        .collect(Collectors.toList());
+            }
+        } else {
+            activeStudents = new ArrayList<>();
+            activeGroups = new ArrayList<>();
+        }
+
+        Set<Long> mentorStudentIds = activeStudents.stream().map(Student::getId).collect(Collectors.toSet());
 
         LocalDateTime startOfToday = LocalDateTime.of(LocalDate.now(), LocalTime.MIN);
         LocalDateTime endOfToday = LocalDateTime.of(LocalDate.now(), LocalTime.MAX);
@@ -35,6 +72,7 @@ public class DashboardService {
         // Calculate Points Given Today (Positive)
         long pointsGivenToday = pointTransactionRepository.findAll().stream()
                 .filter(t -> "ACTIVE".equals(t.getStatus()))
+                .filter(t -> mentorStudentIds.contains(t.getStudent().getId()))
                 .filter(t -> t.getCreatedAt().isAfter(startOfToday) && t.getCreatedAt().isBefore(endOfToday))
                 .filter(t -> t.getPoints() > 0)
                 .mapToLong(PointTransaction::getPoints)
@@ -43,6 +81,7 @@ public class DashboardService {
         // Calculate Penalties Given Today (Negative)
         long penaltiesGivenToday = pointTransactionRepository.findAll().stream()
                 .filter(t -> "ACTIVE".equals(t.getStatus()))
+                .filter(t -> mentorStudentIds.contains(t.getStudent().getId()))
                 .filter(t -> t.getCreatedAt().isAfter(startOfToday) && t.getCreatedAt().isBefore(endOfToday))
                 .filter(t -> t.getPoints() < 0)
                 .mapToLong(PointTransaction::getPoints)
@@ -51,6 +90,7 @@ public class DashboardService {
         // Get Top 5 Students
         List<Object[]> leaderboard = pointTransactionRepository.findLeaderboard();
         List<Map<String, Object>> top5 = leaderboard.stream()
+                .filter(row -> mentorStudentIds.contains(((Student) row[0]).getId()))
                 .limit(5)
                 .map(row -> {
                     Student s = (Student) row[0];
@@ -66,6 +106,7 @@ public class DashboardService {
         // Compute Leaders for Special Categories
         List<PointTransaction> activeTransactions = pointTransactionRepository.findAll().stream()
                 .filter(t -> "ACTIVE".equals(t.getStatus()))
+                .filter(t -> mentorStudentIds.contains(t.getStudent().getId()))
                 .collect(Collectors.toList());
 
         Map<Long, StudentStats> statsMap = new HashMap<>();

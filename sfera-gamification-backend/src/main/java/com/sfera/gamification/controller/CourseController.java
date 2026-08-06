@@ -21,7 +21,7 @@ public class CourseController {
     }
 
     @PostMapping
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
     public ResponseEntity<?> createCourse(@RequestBody Map<String, String> request) {
         String name = request.get("name");
         if (name == null || name.isEmpty()) {

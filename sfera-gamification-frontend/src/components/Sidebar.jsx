@@ -16,24 +16,39 @@ import { useAuth } from '../context/AuthContext';
 
 export default function Sidebar({ currentPage, setCurrentPage, collapsed, setCollapsed }) {
   const { user, logout } = useAuth();
+  const isSuperAdmin = user?.role === 'SUPER_ADMIN';
   const isAdmin = user?.role === 'ADMIN';
+  const isMentor = user?.role === 'MENTOR';
   const isStudent = user?.role === 'STUDENT';
 
-  const menuItems = isStudent ? [
-    { id: 'dashboard',  name: 'Dashboard',  icon: LayoutDashboard },
-    { id: 'davomat',   name: 'Davomat',    icon: CalendarCheck },
-    { id: 'leaderboard', name: 'Reyting',  icon: Trophy },
-    { id: 'history',   name: 'Ball tarixi', icon: History },
-  ] : [
-    { id: 'dashboard',  name: 'Dashboard',  icon: LayoutDashboard },
-    { id: 'journal',    name: 'Journal',    icon: BookOpen },
-    { id: 'davomat',   name: 'Davomat',    icon: CalendarCheck },
-    { id: 'leaderboard', name: 'Leaderboard', icon: Trophy },
-    { id: 'students',  name: 'Students',   icon: Users },
-    { id: 'groups',    name: 'Groups',     icon: FolderGit },
-    ...(isAdmin ? [{ id: 'mentors', name: 'Mentors', icon: UserCheck }] : []),
-    { id: 'history',   name: 'Point History', icon: History },
-  ];
+  let menuItems = [];
+  if (isStudent) {
+    menuItems = [
+      { id: 'dashboard',   name: 'Dashboard',   icon: LayoutDashboard },
+      { id: 'davomat',     name: 'Davomat',     icon: CalendarCheck },
+      { id: 'leaderboard', name: 'Reyting',     icon: Trophy },
+      { id: 'history',     name: 'Ball tarixi', icon: History },
+    ];
+  } else if (isAdmin) {
+    menuItems = [
+      { id: 'dashboard',   name: 'Dashboard',   icon: LayoutDashboard },
+      { id: 'davomat',     name: 'Davomat',     icon: CalendarCheck },
+      { id: 'leaderboard', name: 'Leaderboard', icon: Trophy },
+      { id: 'students',    name: 'Students',    icon: Users },
+      { id: 'groups',      name: 'Groups',      icon: FolderGit },
+    ];
+  } else { // SUPER_ADMIN or MENTOR
+    menuItems = [
+      { id: 'dashboard',   name: 'Dashboard',   icon: LayoutDashboard },
+      { id: 'journal',     name: 'Journal',     icon: BookOpen },
+      { id: 'davomat',     name: 'Davomat',     icon: CalendarCheck },
+      { id: 'leaderboard', name: 'Leaderboard', icon: Trophy },
+      { id: 'students',    name: 'Students',    icon: Users },
+      { id: 'groups',      name: 'Groups',      icon: FolderGit },
+      ...(isSuperAdmin ? [{ id: 'mentors', name: 'Mentors', icon: UserCheck }] : []),
+      { id: 'history',     name: 'Point History', icon: History },
+    ];
+  }
 
   return (
     <aside 

@@ -191,4 +191,13 @@ public class StudentService {
 
         return profile;
     }
+
+    public List<Student> getStudentsByMentor(Long mentorId) {
+        List<GroupStudent> list = groupStudentRepository.findByGroupMentorIdAndStatus(mentorId, "ACTIVE");
+        return list.stream()
+                .map(GroupStudent::getStudent)
+                .filter(s -> "ACTIVE".equals(s.getStatus()))
+                .distinct()
+                .collect(Collectors.toList());
+    }
 }

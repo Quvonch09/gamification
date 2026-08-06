@@ -28,8 +28,8 @@ public class TransactionService {
         User admin = userRepository.findByUsername(adminUsername)
                 .orElseThrow(() -> new IllegalArgumentException("Admin user not found"));
 
-        if (!"ADMIN".equals(admin.getRole())) {
-            throw new SecurityException("Only admins can cancel transactions");
+        if (!"SUPER_ADMIN".equals(admin.getRole())) {
+            throw new SecurityException("Only super admins can cancel transactions");
         }
 
         transaction.setStatus("CANCELLED");

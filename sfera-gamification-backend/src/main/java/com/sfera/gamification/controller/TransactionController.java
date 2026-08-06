@@ -83,7 +83,7 @@ public class TransactionController {
     }
 
     @PostMapping("/{id}/cancel")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
     public ResponseEntity<?> cancelTransaction(@PathVariable Long id, Principal principal) {
         if (principal == null) {
             return ResponseEntity.status(401).body("Unauthorized");
@@ -97,7 +97,7 @@ public class TransactionController {
     }
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'MENTOR')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'MENTOR')")
     public ResponseEntity<?> createTransaction(@RequestBody Map<String, Object> request, Principal principal) {
         if (principal == null) {
             return ResponseEntity.status(401).body("Unauthorized");

@@ -28,8 +28,29 @@ public class GroupController {
     private MentorRepository mentorRepository;
 
     @GetMapping
-    public ResponseEntity<?> getAllGroups() {
-        List<Group> groups = groupService.getActiveGroups();
+    public ResponseEntity<?> getAllGroups(Principal principal) {
+        if (principal == null) {
+            return ResponseEntity.status(401).body("Unauthorized");
+        }
+        User user = userRepository.findByUsername(principal.getName()).orElse(null);
+        if (user == null) {
+            return ResponseEntity.status(404).body("User not found");
+        }
+
+        List<Group> groups;
+        if ("SUPER_ADMIN".equals(user.getRole()) || "ADMIN".equals(user.getRole())) {
+            groups = groupService.getActiveGroups();
+        } else if ("MENTOR".equals(user.getRole())) {
+            Mentor mentor = mentorRepository.findByUserId(user.getId()).orElse(null);
+            if (mentor == null) {
+                groups = new ArrayList<>();
+            } else {
+                groups = groupService.getGroupsByMentor(mentor.getId());
+            }
+        } else {
+            groups = new ArrayList<>();
+        }
+
         List<Map<String, Object>> response = new ArrayList<>();
         for (Group g : groups) {
             response.add(mapGroup(g));
@@ -48,7 +69,7 @@ public class GroupController {
         }
 
         List<Group> groups;
-        if ("ADMIN".equals(user.getRole())) {
+        if ("SUPER_ADMIN".equals(user.getRole()) || "ADMIN".equals(user.getRole())) {
             groups = groupService.getActiveGroups();
         } else {
             Mentor mentor = mentorRepository.findByUserId(user.getId()).orElse(null);
@@ -67,11 +88,27 @@ public class GroupController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<?> getGroupById(@PathVariable Long id) {
+    public ResponseEntity<?> getGroupById(@PathVariable Long id, Principal principal) {
+        if (principal == null) {
+            return ResponseEntity.status(401).body("Unauthorized");
+        }
+        User user = userRepository.findByUsername(principal.getName()).orElse(null);
+        if (user == null) {
+            return ResponseEntity.status(404).body("User not found");
+        }
+
         Group group = groupService.getGroupById(id);
         if (group == null) {
             return ResponseEntity.notFound().build();
         }
+
+        if ("MENTOR".equals(user.getRole())) {
+            Mentor mentor = mentorRepository.findByUserId(user.getId()).orElse(null);
+            if (mentor == null || group.getMentor() == null || !group.getMentor().getId().equals(mentor.getId())) {
+                return ResponseEntity.status(403).body("Access Denied - Not your group");
+            }
+        }
+
         return ResponseEntity.ok(mapGroup(group));
     }
 
@@ -91,7 +128,7 @@ public class GroupController {
     }
 
     @PostMapping
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
     public ResponseEntity<?> createGroup(@RequestBody Map<String, String> request) {
         String name = request.get("name");
         String courseIdStr = request.get("courseId");
@@ -122,7 +159,7 @@ public class GroupController {
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
     public ResponseEntity<?> updateGroup(@PathVariable Long id, @RequestBody Map<String, String> request) {
         Group group = groupService.getGroupById(id);
         if (group == null) {
@@ -156,7 +193,7 @@ public class GroupController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
     public ResponseEntity<?> deleteGroup(@PathVariable Long id) {
         groupService.archiveGroup(id);
         return ResponseEntity.ok().build();

@@ -6,11 +6,13 @@ import com.sfera.gamification.entity.GroupStudent;
 import com.sfera.gamification.entity.User;
 import com.sfera.gamification.entity.PointRule;
 import com.sfera.gamification.entity.PointTransaction;
+import com.sfera.gamification.entity.Mentor;
 import com.sfera.gamification.repository.PointTransactionRepository;
 import com.sfera.gamification.repository.GroupStudentRepository;
 import com.sfera.gamification.repository.GroupRepository;
 import com.sfera.gamification.repository.UserRepository;
 import com.sfera.gamification.repository.PointRuleRepository;
+import com.sfera.gamification.repository.MentorRepository;
 import com.sfera.gamification.service.StudentService;
 import com.sfera.gamification.service.GroupService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -47,11 +49,35 @@ public class StudentController {
     private PointRuleRepository pointRuleRepository;
 
     @Autowired
+    private MentorRepository mentorRepository;
+
+    @Autowired
     private PasswordEncoder passwordEncoder;
 
     @GetMapping
-    public ResponseEntity<?> getAllStudents() {
-        List<Student> students = studentService.getActiveStudents();
+    public ResponseEntity<?> getAllStudents(Principal principal) {
+        if (principal == null) {
+            return ResponseEntity.status(401).body("Unauthorized");
+        }
+        User user = userRepository.findByUsername(principal.getName()).orElse(null);
+        if (user == null) {
+            return ResponseEntity.status(404).body("User not found");
+        }
+
+        List<Student> students;
+        if ("SUPER_ADMIN".equals(user.getRole()) || "ADMIN".equals(user.getRole())) {
+            students = studentService.getActiveStudents();
+        } else if ("MENTOR".equals(user.getRole())) {
+            Mentor mentor = mentorRepository.findByUserId(user.getId()).orElse(null);
+            if (mentor == null) {
+                students = new ArrayList<>();
+            } else {
+                students = studentService.getStudentsByMentor(mentor.getId());
+            }
+        } else {
+            students = new ArrayList<>();
+        }
+
         List<Map<String, Object>> response = new ArrayList<>();
         
         for (Student s : students) {
@@ -92,17 +118,43 @@ public class StudentController {
     public ResponseEntity<?> getLeaderboard(
             @RequestParam(required = false) Long groupId,
             @RequestParam(required = false) Long mentorId,
-            @RequestParam(required = false) Long courseId) {
+            @RequestParam(required = false) Long courseId,
+            Principal principal) {
         
+        if (principal == null) {
+            return ResponseEntity.status(401).body("Unauthorized");
+        }
+        User user = userRepository.findByUsername(principal.getName()).orElse(null);
+        if (user == null) {
+            return ResponseEntity.status(404).body("User not found");
+        }
+
         List<Object[]> data;
-        if (groupId != null) {
-            data = pointTransactionRepository.findLeaderboardByGroup(groupId);
-        } else if (mentorId != null) {
-            data = pointTransactionRepository.findLeaderboardByMentor(mentorId);
-        } else if (courseId != null) {
-            data = pointTransactionRepository.findLeaderboardByCourse(courseId);
+        if ("MENTOR".equals(user.getRole())) {
+            Mentor mentor = mentorRepository.findByUserId(user.getId()).orElse(null);
+            if (mentor == null) {
+                data = new ArrayList<>();
+            } else {
+                if (groupId != null) {
+                    Group group = groupService.getGroupById(groupId);
+                    if (group == null || group.getMentor() == null || !group.getMentor().getId().equals(mentor.getId())) {
+                        return ResponseEntity.status(403).body("Access Denied - Not your group");
+                    }
+                    data = pointTransactionRepository.findLeaderboardByGroup(groupId);
+                } else {
+                    data = pointTransactionRepository.findLeaderboardByMentor(mentor.getId());
+                }
+            }
         } else {
-            data = pointTransactionRepository.findLeaderboard();
+            if (groupId != null) {
+                data = pointTransactionRepository.findLeaderboardByGroup(groupId);
+            } else if (mentorId != null) {
+                data = pointTransactionRepository.findLeaderboardByMentor(mentorId);
+            } else if (courseId != null) {
+                data = pointTransactionRepository.findLeaderboardByCourse(courseId);
+            } else {
+                data = pointTransactionRepository.findLeaderboard();
+            }
         }
 
         List<Map<String, Object>> result = new ArrayList<>();
@@ -132,7 +184,7 @@ public class StudentController {
     }
 
     @PostMapping
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
     public ResponseEntity<?> createStudent(@RequestBody Map<String, String> request, Principal principal) {
         String firstName = request.get("firstName");
         String lastName = request.get("lastName");
@@ -210,7 +262,7 @@ public class StudentController {
     }
 
     @PostMapping("/bulk-import")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
     public ResponseEntity<?> bulkImportStudents(@RequestBody Map<String, String> request, Principal principal) {
         String groupIdStr = request.get("groupId");
         String text = request.get("text");
@@ -321,7 +373,7 @@ public class StudentController {
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
     public ResponseEntity<?> updateStudent(@PathVariable Long id, @RequestBody Map<String, String> request) {
         Student student = studentService.getStudentById(id);
         if (student == null) {
@@ -372,7 +424,7 @@ public class StudentController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
     public ResponseEntity<?> deleteOrArchiveStudent(@PathVariable Long id) {
         studentService.archiveStudent(id);
         return ResponseEntity.ok().build();

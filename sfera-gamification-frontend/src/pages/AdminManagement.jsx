@@ -22,7 +22,9 @@ import CustomSelect from '../components/CustomSelect';
 export default function AdminManagement({ activeSubTab }) {
   const { user } = useAuth();
   const { groups, courses, mentors, refreshData } = useData();
+  const isSuperAdmin = user?.role === 'SUPER_ADMIN';
   const isAdmin = user?.role === 'ADMIN';
+  const canManage = isSuperAdmin;
 
   // Tabs: students, groups, mentors, courses
   const [activeTab, setActiveTab] = useState(activeSubTab || 'students');
@@ -310,7 +312,7 @@ export default function AdminManagement({ activeSubTab }) {
 
         {/* Global Toolbar buttons based on active tab */}
         <div>
-          {activeTab === 'students' && isAdmin && (
+          {activeTab === 'students' && canManage && (
             <div className="flex gap-2">
               <button onClick={openAddStudent} className="flex items-center gap-1.5 px-4 py-2.5 bg-indigo-650 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold shadow shadow-indigo-500/10 cursor-pointer">
                 <Plus size={15} /> O'QUVCHI QO'SHISH
@@ -320,17 +322,17 @@ export default function AdminManagement({ activeSubTab }) {
               </button>
             </div>
           )}
-          {activeTab === 'groups' && isAdmin && (
+          {activeTab === 'groups' && canManage && (
             <button onClick={openAddGroup} className="flex items-center gap-1.5 px-4 py-2.5 bg-indigo-650 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold shadow shadow-indigo-500/10 cursor-pointer">
               <Plus size={15} /> GURUH YARATISH
             </button>
           )}
-          {activeTab === 'mentors' && mentorSubTab === 'crud' && isAdmin && (
+          {activeTab === 'mentors' && mentorSubTab === 'crud' && canManage && (
             <button onClick={openAddMentor} className="flex items-center gap-1.5 px-4 py-2.5 bg-indigo-650 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold shadow shadow-indigo-500/10 cursor-pointer">
               <Plus size={15} /> MENTOR YARATISH
             </button>
           )}
-          {activeTab === 'courses' && isAdmin && (
+          {activeTab === 'courses' && canManage && (
             <button onClick={openAddCourse} className="flex items-center gap-1.5 px-4 py-2.5 bg-indigo-650 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold shadow shadow-indigo-500/10 cursor-pointer">
               <Plus size={15} /> KURS QO'SHISH
             </button>
@@ -399,12 +401,12 @@ export default function AdminManagement({ activeSubTab }) {
                     <th className="py-4 px-6">TALABA</th>
                     <th className="py-4 px-6">GURUH</th>
                     <th className="py-4 px-6 text-center">JAMI XP</th>
-                    {isAdmin && <th className="py-4 px-6 text-center">HARAKATLAR</th>}
+                    {canManage && <th className="py-4 px-6 text-center">HARAKATLAR</th>}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-800/60 text-slate-300 text-sm">
                   {students.length === 0 ? (
-                    <tr><td colSpan={isAdmin ? 4 : 3} className="py-8 text-center text-slate-500">O'quvchilar yo'q</td></tr>
+                    <tr><td colSpan={canManage ? 4 : 3} className="py-8 text-center text-slate-500">O'quvchilar yo'q</td></tr>
                   ) : (
                     students.map(s => (
                       <tr key={s.id} className="hover:bg-slate-850/20 transition-all">
@@ -415,7 +417,7 @@ export default function AdminManagement({ activeSubTab }) {
                             {s.xp} XP
                           </span>
                         </td>
-                        {isAdmin && (
+                        {canManage && (
                           <td className="py-4 px-6">
                             <div className="flex items-center justify-center gap-2">
                               <button onClick={() => openEditStudent(s)} className="w-8 h-8 rounded-lg bg-slate-800 hover:bg-indigo-650 text-slate-400 hover:text-white flex items-center justify-center cursor-pointer transition-colors border border-slate-700/50">
@@ -444,19 +446,19 @@ export default function AdminManagement({ activeSubTab }) {
                     <th className="py-4 px-6">GURUH NOMI</th>
                     <th className="py-4 px-6">KURS</th>
                     <th className="py-4 px-6">MENTOR</th>
-                    {isAdmin && <th className="py-4 px-6 text-center">HARAKATLAR</th>}
+                    {canManage && <th className="py-4 px-6 text-center">HARAKATLAR</th>}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-800/60 text-slate-300 text-sm">
                   {groups.length === 0 ? (
-                    <tr><td colSpan={isAdmin ? 4 : 3} className="py-8 text-center text-slate-500">Guruhlar yo'q</td></tr>
+                    <tr><td colSpan={canManage ? 4 : 3} className="py-8 text-center text-slate-500">Guruhlar yo'q</td></tr>
                   ) : (
                     groups.map(g => (
                       <tr key={g.id} className="hover:bg-slate-850/20 transition-all">
                         <td className="py-4 px-6 font-bold text-slate-100">{g.name}</td>
                         <td className="py-4 px-6 font-semibold text-slate-400">{g.courseName}</td>
                         <td className="py-4 px-6 font-semibold text-slate-400">{g.mentorName}</td>
-                        {isAdmin && (
+                        {canManage && (
                           <td className="py-4 px-6">
                             <div className="flex items-center justify-center gap-2">
                               <button onClick={() => openEditGroup(g)} className="w-8 h-8 rounded-lg bg-slate-800 hover:bg-indigo-650 text-slate-400 hover:text-white flex items-center justify-center cursor-pointer transition-colors border border-slate-700/50">
@@ -513,12 +515,12 @@ export default function AdminManagement({ activeSubTab }) {
                         <th className="py-4 px-6">MENTOR F.I.O</th>
                         <th className="py-4 px-6">USERNAME</th>
                         <th className="py-4 px-6">GURUHLARI</th>
-                        {isAdmin && <th className="py-4 px-6 text-center">HARAKATLAR</th>}
+                        {canManage && <th className="py-4 px-6 text-center">HARAKATLAR</th>}
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-850 text-slate-300 text-sm">
                       {mentors.length === 0 ? (
-                        <tr><td colSpan={isAdmin ? 4 : 3} className="py-8 text-center text-slate-500">Mentorlar yo'q</td></tr>
+                        <tr><td colSpan={canManage ? 4 : 3} className="py-8 text-center text-slate-500">Mentorlar yo'q</td></tr>
                       ) : (
                         mentors.map(m => (
                           <tr key={m.id} className="hover:bg-slate-850/20 transition-all">
@@ -537,7 +539,7 @@ export default function AdminManagement({ activeSubTab }) {
                                 )}
                               </div>
                             </td>
-                            {isAdmin && (
+                            {canManage && (
                               <td className="py-4 px-6">
                                 <div className="flex items-center justify-center gap-2">
                                   <button onClick={() => openEditMentor(m)} className="w-8 h-8 rounded-lg bg-slate-800 hover:bg-indigo-650 text-slate-400 hover:text-white flex items-center justify-center cursor-pointer transition-colors border border-slate-700/50 animate-pulse">

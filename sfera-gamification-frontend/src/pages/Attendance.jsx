@@ -22,7 +22,9 @@ const STATUS_CONFIG = {
 
 export default function Attendance({ refreshTrigger }) {
   const { user } = useAuth();
+  const isSuperAdmin = user?.role === 'SUPER_ADMIN';
   const isAdmin   = user?.role === 'ADMIN';
+  const isAnyAdmin = isSuperAdmin || isAdmin;
   const isMentor  = user?.role === 'MENTOR';
   const isStudent = user?.role === 'STUDENT';
 
@@ -37,7 +39,7 @@ export default function Attendance({ refreshTrigger }) {
 
   // Student: show only their own records — no filters needed
   useEffect(() => {
-    if (!isAdmin && !isMentor) return;
+    if (!isAnyAdmin && !isMentor) return;
 
     // Load groups for filter
     axios.get('/api/attendance/my-groups')
@@ -53,7 +55,7 @@ export default function Attendance({ refreshTrigger }) {
         setMentors(Object.values(mentorMap));
       })
       .catch(err => console.error('Error loading groups', err));
-  }, [isAdmin, isMentor]);
+  }, [isAnyAdmin, isMentor]);
 
   useEffect(() => {
     fetchRecords();
@@ -112,7 +114,7 @@ export default function Attendance({ refreshTrigger }) {
       </div>
 
       {/* Filters (Admin & Mentor only) */}
-      {(isAdmin || isMentor) && (
+      {(isAnyAdmin || isMentor) && (
         <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex flex-col sm:flex-row gap-3">
           {/* Search */}
           <div className="relative flex-1">
@@ -136,7 +138,7 @@ export default function Attendance({ refreshTrigger }) {
           />
 
           {/* Mentor filter (Admin only) */}
-          {isAdmin && (
+          {isAnyAdmin && (
             <CustomSelect
               value={selectedMentor}
               onChange={val => setSelectedMentor(val)}
@@ -182,7 +184,7 @@ export default function Attendance({ refreshTrigger }) {
                   {!isStudent && <th className="py-3 px-5">O'QUVCHI</th>}
                   <th className="py-3 px-5">SANA</th>
                   {!isStudent && <th className="py-3 px-5">GURUH</th>}
-                  {isAdmin && <th className="py-3 px-5">O'QITUVCHI</th>}
+                  {isAnyAdmin && <th className="py-3 px-5">O'QITUVCHI</th>}
                   <th className="py-3 px-5 text-center">HOLAT</th>
                   <th className="py-3 px-5">IZOH</th>
                 </tr>
@@ -206,7 +208,7 @@ export default function Attendance({ refreshTrigger }) {
                           {record.groupName || '—'}
                         </td>
                       )}
-                      {isAdmin && (
+                      {isAnyAdmin && (
                         <td className="py-3 px-5 text-slate-400 text-xs">
                           {record.mentorName || '—'}
                         </td>

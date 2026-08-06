@@ -18,7 +18,7 @@ import CustomSelect from '../components/CustomSelect';
 export default function PointHistory({ refreshTrigger }) {
   const { user } = useAuth();
   const { mentors } = useData();
-  const isAdmin = user?.role === 'ADMIN';
+  const isAdmin = user?.role === 'SUPER_ADMIN';
 
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);

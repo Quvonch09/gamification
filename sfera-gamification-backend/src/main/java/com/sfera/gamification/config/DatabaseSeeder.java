@@ -73,6 +73,16 @@ public class DatabaseSeeder implements CommandLineRunner {
                 PointRule initialPoints = PointRule.builder().code("INITIAL_POINTS").name("Tizimdan oldingi yig'ilgan ballar").points(0).type("POSITIVE").active(true).build();
                 pointRuleRepository.save(initialPoints);
             }
+            if (userRepository.findByUsername("admin_limited").isEmpty()) {
+                User adminLimited = User.builder()
+                        .username("admin_limited")
+                        .password(passwordEncoder.encode("admin123"))
+                        .fullName("Sfera Limited Admin")
+                        .role("ADMIN")
+                        .createdAt(LocalDateTime.now())
+                        .build();
+                userRepository.save(adminLimited);
+            }
             return; // Database already seeded
         }
 
@@ -94,7 +104,15 @@ public class DatabaseSeeder implements CommandLineRunner {
         User admin = User.builder()
                 .username("admin")
                 .password(passwordEncoder.encode("admin123"))
-                .fullName("Sfera Admin")
+                .fullName("Sfera Super Admin")
+                .role("SUPER_ADMIN")
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        User adminLimited = User.builder()
+                .username("admin_limited")
+                .password(passwordEncoder.encode("admin123"))
+                .fullName("Sfera Limited Admin")
                 .role("ADMIN")
                 .createdAt(LocalDateTime.now())
                 .build();
@@ -115,7 +133,7 @@ public class DatabaseSeeder implements CommandLineRunner {
                 .createdAt(LocalDateTime.now())
                 .build();
 
-        userRepository.saveAll(Arrays.asList(admin, userQuvonchbek, userMuhammad));
+        userRepository.saveAll(Arrays.asList(admin, adminLimited, userQuvonchbek, userMuhammad));
 
         // 3. Seed Mentors
         Mentor mentorQuvonchbek = Mentor.builder().user(userQuvonchbek).createdAt(LocalDateTime.now()).build();

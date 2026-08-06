@@ -89,7 +89,17 @@ function AppContent() {
   };
 
   const handleQuantityChange = (qty) => {
-    const parsedQty = parseInt(qty) || 1;
+    if (qty === '') {
+      setQuickAwardForm(prev => ({
+        ...prev,
+        quantity: '',
+        points: 0
+      }));
+      return;
+    }
+    const parsedQty = parseInt(qty);
+    if (isNaN(parsedQty)) return;
+
     const selectedRule = pointRules.find(r => r.id.toString() === quickAwardForm.pointRuleId.toString());
     const basePoints = selectedRule ? selectedRule.points : 0;
     setQuickAwardForm(prev => ({
@@ -295,7 +305,7 @@ function AppContent() {
           </div>
 
           <div className="flex items-center gap-4">
-            {user.role !== 'STUDENT' && (
+            {(user.role === 'SUPER_ADMIN' || user.role === 'MENTOR') && (
               <button
                 onClick={handleOpenQuickAward}
                 className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-extrabold rounded-xl text-xs shadow-lg shadow-amber-500/10 active:scale-[0.98] transition-all cursor-pointer border-0"

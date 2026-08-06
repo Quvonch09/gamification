@@ -51,7 +51,7 @@ public class AttendanceController {
         if (user == null) return ResponseEntity.status(404).body("User not found");
 
         String role = user.getRole();
-        List<LessonRecord> records;
+        List<LessonRecord> records = new ArrayList<>();
 
         if ("STUDENT".equals(role)) {
             // Student faqat o'z davomatini ko'radi
@@ -61,7 +61,6 @@ public class AttendanceController {
             }
             if (studentId == null) return ResponseEntity.ok(List.of());
             records = lessonRecordRepository.findByStudentId(studentId);
-
         } else if ("MENTOR".equals(role)) {
             // Mentor faqat o'z guruhlarini ko'radi
             Mentor mentor = mentorRepository.findByUserId(user.getId()).orElse(null);
@@ -73,8 +72,8 @@ public class AttendanceController {
             } else {
                 records = lessonRecordRepository.findByMentorUserId(user.getId());
             }
-        } else {
-            // ADMIN — barcha filtrlar
+        } else if ("SUPER_ADMIN".equals(role) || "ADMIN".equals(role)) {
+            // ADMIN / SUPER_ADMIN — barcha filtrlar
             if (groupId != null && mentorId != null) {
                 records = lessonRecordRepository.findByGroupIdAndMentorId(groupId, mentorId);
             } else if (groupId != null) {
@@ -138,7 +137,7 @@ public class AttendanceController {
         if (user == null) return ResponseEntity.status(404).body("User not found");
 
         List<Group> groups;
-        if ("ADMIN".equals(user.getRole())) {
+        if ("SUPER_ADMIN".equals(user.getRole()) || "ADMIN".equals(user.getRole())) {
             groups = groupRepository.findAll().stream()
                     .filter(g -> "ACTIVE".equals(g.getStatus()))
                     .toList();
