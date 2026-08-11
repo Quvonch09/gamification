@@ -36,6 +36,7 @@ export default function Attendance({ refreshTrigger }) {
   const [selectedGroup,  setSelectedGroup]  = useState('');
   const [selectedMentor, setSelectedMentor] = useState('');
   const [searchQuery,    setSearchQuery]    = useState('');
+  const [selectedDate,   setSelectedDate]   = useState('');
 
   // Student: show only their own records — no filters needed
   useEffect(() => {
@@ -73,10 +74,11 @@ export default function Attendance({ refreshTrigger }) {
       .finally(() => setLoading(false));
   };
 
-  // Filter by search query (student name)
+  // Filter by search query (student name) and date
   const filtered = records.filter(r => {
-    if (!searchQuery) return true;
-    return r.studentName?.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchName = !searchQuery || r.studentName?.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchDate = !selectedDate || (r.lessonDate && r.lessonDate.startsWith(selectedDate));
+    return matchName && matchDate;
   });
 
   // Summary stats
@@ -115,9 +117,9 @@ export default function Attendance({ refreshTrigger }) {
 
       {/* Filters (Admin & Mentor only) */}
       {(isAnyAdmin || isMentor) && (
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex flex-col sm:flex-row gap-3">
+        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex flex-col sm:flex-row gap-3 flex-wrap">
           {/* Search */}
-          <div className="relative flex-1">
+          <div className="relative flex-1 min-w-[180px]">
             <input
               type="text"
               placeholder="O'quvchi ismini qidirish..."
@@ -126,6 +128,23 @@ export default function Attendance({ refreshTrigger }) {
               className="w-full h-10 pl-10 pr-4 bg-slate-950/60 border border-slate-800 rounded-xl text-slate-200 focus:outline-none focus:border-indigo-500 text-sm font-semibold"
             />
             <Search size={16} className="absolute left-3 top-3 text-slate-500" />
+          </div>
+
+          {/* Date filter */}
+          <div className="relative flex-shrink-0">
+            <input
+              type="date"
+              value={selectedDate}
+              onChange={e => setSelectedDate(e.target.value)}
+              className="h-10 pl-3 pr-3 bg-slate-950/60 border border-slate-800 rounded-xl text-slate-200 focus:outline-none focus:border-indigo-500 text-sm font-semibold cursor-pointer"
+              title="Sana bo'yicha filtrlash"
+            />
+            {selectedDate && (
+              <button
+                onClick={() => setSelectedDate('')}
+                className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-rose-500 text-white rounded-full flex items-center justify-center text-[10px] hover:bg-rose-400"
+              >✕</button>
+            )}
           </div>
 
           {/* Group filter */}

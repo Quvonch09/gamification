@@ -13,7 +13,8 @@ import {
   PlusCircle,
   FileSpreadsheet,
   ChevronDown,
-  Trash2
+  Trash2,
+  Search
 } from 'lucide-react';
 import MentorMonitor from './MentorMonitor';
 import { useAuth } from '../context/AuthContext';
@@ -64,6 +65,12 @@ export default function AdminManagement({ activeSubTab }) {
   // Bulk Import modal states
   const [showBulkModal, setShowBulkModal] = useState(false);
   const [bulkForm, setBulkForm] = useState({ groupId: '', text: '' });
+
+  // Search states for each tab
+  const [studentSearch, setStudentSearch] = useState('');
+  const [groupSearch, setGroupSearch] = useState('');
+  const [mentorSearch, setMentorSearch] = useState('');
+  const [adminSearch, setAdminSearch] = useState('');
 
   // Custom Delete Confirm modal state
   const [deleteConfirm, setDeleteConfirm] = useState({
@@ -372,6 +379,45 @@ export default function AdminManagement({ activeSubTab }) {
       });
   };
 
+  // ---- Filtered lists ----
+  const filteredStudents = students.filter(s => {
+    if (!studentSearch.trim()) return true;
+    const q = studentSearch.toLowerCase();
+    return (
+      s.fullName?.toLowerCase().includes(q) ||
+      s.groupName?.toLowerCase().includes(q) ||
+      s.mentorName?.toLowerCase().includes(q)
+    );
+  });
+
+  const filteredGroups = groups.filter(g => {
+    if (!groupSearch.trim()) return true;
+    const q = groupSearch.toLowerCase();
+    return (
+      g.name?.toLowerCase().includes(q) ||
+      g.mentorName?.toLowerCase().includes(q) ||
+      g.courseName?.toLowerCase().includes(q)
+    );
+  });
+
+  const filteredMentors = mentors.filter(m => {
+    if (!mentorSearch.trim()) return true;
+    const q = mentorSearch.toLowerCase();
+    return (
+      m.fullName?.toLowerCase().includes(q) ||
+      m.username?.toLowerCase().includes(q)
+    );
+  });
+
+  const filteredAdmins = adminsList.filter(a => {
+    if (!adminSearch.trim()) return true;
+    const q = adminSearch.toLowerCase();
+    return (
+      a.fullName?.toLowerCase().includes(q) ||
+      a.username?.toLowerCase().includes(q)
+    );
+  });
+
   return (
     <div className="p-6 space-y-6 overflow-y-auto max-h-[calc(100vh-4rem)]">
       {/* Tab Switcher Headers */}
@@ -482,87 +528,135 @@ export default function AdminManagement({ activeSubTab }) {
         <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-lg">
           {/* Panel: Students */}
           {activeTab === 'students' && (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="border-b border-slate-800 bg-slate-950/40 text-[10px] font-bold text-slate-400 tracking-wider uppercase">
-                    <th className="py-4 px-6">TALABA</th>
-                    <th className="py-4 px-6">GURUH</th>
-                    <th className="py-4 px-6 text-center">JAMI XP</th>
-                    {canManage && <th className="py-4 px-6 text-center">HARAKATLAR</th>}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-800/60 text-slate-300 text-sm">
-                  {students.length === 0 ? (
-                    <tr><td colSpan={canManage ? 4 : 3} className="py-8 text-center text-slate-500">O'quvchilar yo'q</td></tr>
-                  ) : (
-                    students.map(s => (
-                      <tr key={s.id} className="hover:bg-slate-850/20 transition-all">
-                        <td className="py-4 px-6 font-bold text-slate-100">{s.fullName}</td>
-                        <td className="py-4 px-6 font-semibold uppercase text-xs text-slate-400">{s.groupName}</td>
-                        <td className="py-4 px-6 text-center">
-                          <span className="font-extrabold text-indigo-400 bg-indigo-500/10 px-2.5 py-1 rounded-lg border border-indigo-500/10 text-xs">
-                            {s.xp} XP
-                          </span>
-                        </td>
-                        {canManage && (
-                          <td className="py-4 px-6">
-                            <div className="flex items-center justify-center gap-2">
-                              <button onClick={() => openEditStudent(s)} className="w-8 h-8 rounded-lg bg-slate-800 hover:bg-indigo-650 text-slate-400 hover:text-white flex items-center justify-center cursor-pointer transition-colors border border-slate-700/50">
-                                <Edit3 size={13} />
-                              </button>
-                              <button onClick={() => handleArchiveStudent(s.id)} className="w-8 h-8 rounded-lg bg-slate-800 hover:bg-rose-600/15 border border-slate-700/50 hover:border-rose-500/25 text-slate-400 hover:text-rose-400 flex items-center justify-center cursor-pointer transition-colors">
-                                <Archive size={13} />
-                              </button>
-                            </div>
-                          </td>
-                        )}
-                      </tr>
-                    ))
+            <div>
+              {/* Search bar */}
+              <div className="p-4 border-b border-slate-800">
+                <div className="relative max-w-md">
+                  <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+                  <input
+                    type="text"
+                    placeholder="Ism, guruh yoki o'qituvchi bo'yicha qidirish..."
+                    value={studentSearch}
+                    onChange={e => setStudentSearch(e.target.value)}
+                    className="w-full h-9 pl-9 pr-4 bg-slate-950/60 border border-slate-700 rounded-xl text-slate-200 focus:outline-none focus:border-indigo-500 text-sm placeholder:text-slate-500"
+                  />
+                  {studentSearch && (
+                    <button onClick={() => setStudentSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300">
+                      <X size={14} />
+                    </button>
                   )}
-                </tbody>
-              </table>
+                </div>
+                {studentSearch && <p className="text-xs text-slate-500 mt-1.5">{filteredStudents.length} ta natija topildi</p>}
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="border-b border-slate-800 bg-slate-950/40 text-[10px] font-bold text-slate-400 tracking-wider uppercase">
+                      <th className="py-4 px-6">TALABA</th>
+                      <th className="py-4 px-6">GURUH</th>
+                      <th className="py-4 px-6 text-center">JAMI XP</th>
+                      {canManage && <th className="py-4 px-6 text-center">HARAKATLAR</th>}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-800/60 text-slate-300 text-sm">
+                    {filteredStudents.length === 0 ? (
+                      <tr><td colSpan={canManage ? 4 : 3} className="py-10 text-center text-slate-500">
+                        <Search size={32} className="mx-auto mb-2 opacity-30" />
+                        {studentSearch ? `"${studentSearch}" bo'yicha natija topilmadi` : "O'quvchilar yo'q"}
+                      </td></tr>
+                    ) : (
+                      filteredStudents.map(s => (
+                        <tr key={s.id} className="hover:bg-slate-850/20 transition-all">
+                          <td className="py-4 px-6 font-bold text-slate-100">{s.fullName}</td>
+                          <td className="py-4 px-6 font-semibold uppercase text-xs text-slate-400">{s.groupName}</td>
+                          <td className="py-4 px-6 text-center">
+                            <span className="font-extrabold text-indigo-400 bg-indigo-500/10 px-2.5 py-1 rounded-lg border border-indigo-500/10 text-xs">
+                              {s.xp} XP
+                            </span>
+                          </td>
+                          {canManage && (
+                            <td className="py-4 px-6">
+                              <div className="flex items-center justify-center gap-2">
+                                <button onClick={() => openEditStudent(s)} className="w-8 h-8 rounded-lg bg-slate-800 hover:bg-indigo-650 text-slate-400 hover:text-white flex items-center justify-center cursor-pointer transition-colors border border-slate-700/50">
+                                  <Edit3 size={13} />
+                                </button>
+                                <button onClick={() => handleArchiveStudent(s.id)} className="w-8 h-8 rounded-lg bg-slate-800 hover:bg-rose-600/15 border border-slate-700/50 hover:border-rose-500/25 text-slate-400 hover:text-rose-400 flex items-center justify-center cursor-pointer transition-colors">
+                                  <Archive size={13} />
+                                </button>
+                              </div>
+                            </td>
+                          )}
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
 
           {/* Panel: Groups */}
           {activeTab === 'groups' && (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="border-b border-slate-800 bg-slate-950/40 text-[10px] font-bold text-slate-400 tracking-wider uppercase">
-                    <th className="py-4 px-6">GURUH NOMI</th>
-                    <th className="py-4 px-6">KURS</th>
-                    <th className="py-4 px-6">MENTOR</th>
-                    {canManage && <th className="py-4 px-6 text-center">HARAKATLAR</th>}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-800/60 text-slate-300 text-sm">
-                  {groups.length === 0 ? (
-                    <tr><td colSpan={canManage ? 4 : 3} className="py-8 text-center text-slate-500">Guruhlar yo'q</td></tr>
-                  ) : (
-                    groups.map(g => (
-                      <tr key={g.id} className="hover:bg-slate-850/20 transition-all">
-                        <td className="py-4 px-6 font-bold text-slate-100">{g.name}</td>
-                        <td className="py-4 px-6 font-semibold text-slate-400">{g.courseName}</td>
-                        <td className="py-4 px-6 font-semibold text-slate-400">{g.mentorName}</td>
-                        {canManage && (
-                          <td className="py-4 px-6">
-                            <div className="flex items-center justify-center gap-2">
-                              <button onClick={() => openEditGroup(g)} className="w-8 h-8 rounded-lg bg-slate-800 hover:bg-indigo-650 text-slate-400 hover:text-white flex items-center justify-center cursor-pointer transition-colors border border-slate-700/50">
-                                <Edit3 size={13} />
-                              </button>
-                              <button onClick={() => handleArchiveGroup(g.id)} className="w-8 h-8 rounded-lg bg-slate-800 hover:bg-rose-600/15 border border-slate-700/50 hover:border-rose-500/25 text-slate-400 hover:text-rose-400 flex items-center justify-center cursor-pointer transition-colors">
-                                <Archive size={13} />
-                              </button>
-                            </div>
-                          </td>
-                        )}
-                      </tr>
-                    ))
+            <div>
+              {/* Search bar */}
+              <div className="p-4 border-b border-slate-800">
+                <div className="relative max-w-md">
+                  <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+                  <input
+                    type="text"
+                    placeholder="Guruh nomi, o'qituvchi yoki kurs bo'yicha qidirish..."
+                    value={groupSearch}
+                    onChange={e => setGroupSearch(e.target.value)}
+                    className="w-full h-9 pl-9 pr-4 bg-slate-950/60 border border-slate-700 rounded-xl text-slate-200 focus:outline-none focus:border-indigo-500 text-sm placeholder:text-slate-500"
+                  />
+                  {groupSearch && (
+                    <button onClick={() => setGroupSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300">
+                      <X size={14} />
+                    </button>
                   )}
-                </tbody>
-              </table>
+                </div>
+                {groupSearch && <p className="text-xs text-slate-500 mt-1.5">{filteredGroups.length} ta natija topildi</p>}
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="border-b border-slate-800 bg-slate-950/40 text-[10px] font-bold text-slate-400 tracking-wider uppercase">
+                      <th className="py-4 px-6">GURUH NOMI</th>
+                      <th className="py-4 px-6">KURS</th>
+                      <th className="py-4 px-6">MENTOR</th>
+                      {canManage && <th className="py-4 px-6 text-center">HARAKATLAR</th>}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-800/60 text-slate-300 text-sm">
+                    {filteredGroups.length === 0 ? (
+                      <tr><td colSpan={canManage ? 4 : 3} className="py-10 text-center text-slate-500">
+                        <Search size={32} className="mx-auto mb-2 opacity-30" />
+                        {groupSearch ? `"${groupSearch}" bo'yicha natija topilmadi` : "Guruhlar yo'q"}
+                      </td></tr>
+                    ) : (
+                      filteredGroups.map(g => (
+                        <tr key={g.id} className="hover:bg-slate-850/20 transition-all">
+                          <td className="py-4 px-6 font-bold text-slate-100">{g.name}</td>
+                          <td className="py-4 px-6 font-semibold text-slate-400">{g.courseName}</td>
+                          <td className="py-4 px-6 font-semibold text-slate-400">{g.mentorName}</td>
+                          {canManage && (
+                            <td className="py-4 px-6">
+                              <div className="flex items-center justify-center gap-2">
+                                <button onClick={() => openEditGroup(g)} className="w-8 h-8 rounded-lg bg-slate-800 hover:bg-indigo-650 text-slate-400 hover:text-white flex items-center justify-center cursor-pointer transition-colors border border-slate-700/50">
+                                  <Edit3 size={13} />
+                                </button>
+                                <button onClick={() => handleArchiveGroup(g.id)} className="w-8 h-8 rounded-lg bg-slate-800 hover:bg-rose-600/15 border border-slate-700/50 hover:border-rose-500/25 text-slate-400 hover:text-rose-400 flex items-center justify-center cursor-pointer transition-colors">
+                                  <Archive size={13} />
+                                </button>
+                              </div>
+                            </td>
+                          )}
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
 
@@ -596,54 +690,78 @@ export default function AdminManagement({ activeSubTab }) {
               {mentorSubTab === 'monitor' ? (
                 <MentorMonitor />
               ) : (
-                <div className="overflow-x-auto rounded-xl border border-slate-800/80">
-                  <table className="w-full text-left border-collapse">
-                    <thead>
-                      <tr className="border-b border-slate-800 bg-slate-950/50 text-[10px] font-bold text-slate-400 tracking-wider uppercase">
-                        <th className="py-4 px-6">MENTOR F.I.O</th>
-                        <th className="py-4 px-6">USERNAME</th>
-                        <th className="py-4 px-6">GURUHLARI</th>
-                        {canManage && <th className="py-4 px-6 text-center">HARAKATLAR</th>}
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-850 text-slate-300 text-sm">
-                      {mentors.length === 0 ? (
-                        <tr><td colSpan={canManage ? 4 : 3} className="py-8 text-center text-slate-500">Mentorlar yo'q</td></tr>
-                      ) : (
-                        mentors.map(m => (
-                          <tr key={m.id} className="hover:bg-slate-850/20 transition-all">
-                            <td className="py-4 px-6 font-bold text-slate-100">{m.fullName}</td>
-                            <td className="py-4 px-6 font-semibold text-slate-400">{m.username}</td>
-                            <td className="py-4 px-6">
-                              <div className="flex flex-wrap gap-1">
-                                {m.groups.length === 0 ? (
-                                  <span className="text-slate-500 font-semibold text-xs">Yo'q</span>
-                                ) : (
-                                  m.groups.map((g, i) => (
-                                    <span key={i} className="bg-slate-800 text-slate-400 border border-slate-750 px-2 py-0.5 rounded text-[10px] font-bold uppercase">
-                                      {g}
-                                    </span>
-                                  ))
-                                )}
-                              </div>
-                            </td>
-                            {canManage && (
+                <div className="rounded-xl border border-slate-800/80 overflow-hidden">
+                  {/* Search bar */}
+                  <div className="p-4 border-b border-slate-800 bg-slate-950/20">
+                    <div className="relative max-w-md">
+                      <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+                      <input
+                        type="text"
+                        placeholder="Mentor ismi yoki username bo'yicha qidirish..."
+                        value={mentorSearch}
+                        onChange={e => setMentorSearch(e.target.value)}
+                        className="w-full h-9 pl-9 pr-4 bg-slate-950/60 border border-slate-700 rounded-xl text-slate-200 focus:outline-none focus:border-indigo-500 text-sm placeholder:text-slate-500"
+                      />
+                      {mentorSearch && (
+                        <button onClick={() => setMentorSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300">
+                          <X size={14} />
+                        </button>
+                      )}
+                    </div>
+                    {mentorSearch && <p className="text-xs text-slate-500 mt-1.5">{filteredMentors.length} ta natija topildi</p>}
+                  </div>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse">
+                      <thead>
+                        <tr className="border-b border-slate-800 bg-slate-950/50 text-[10px] font-bold text-slate-400 tracking-wider uppercase">
+                          <th className="py-4 px-6">MENTOR F.I.O</th>
+                          <th className="py-4 px-6">USERNAME</th>
+                          <th className="py-4 px-6">GURUHLARI</th>
+                          {canManage && <th className="py-4 px-6 text-center">HARAKATLAR</th>}
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-850 text-slate-300 text-sm">
+                        {filteredMentors.length === 0 ? (
+                          <tr><td colSpan={canManage ? 4 : 3} className="py-10 text-center text-slate-500">
+                            <Search size={32} className="mx-auto mb-2 opacity-30" />
+                            {mentorSearch ? `"${mentorSearch}" bo'yicha natija topilmadi` : "Mentorlar yo'q"}
+                          </td></tr>
+                        ) : (
+                          filteredMentors.map(m => (
+                            <tr key={m.id} className="hover:bg-slate-850/20 transition-all">
+                              <td className="py-4 px-6 font-bold text-slate-100">{m.fullName}</td>
+                              <td className="py-4 px-6 font-semibold text-slate-400">{m.username}</td>
                               <td className="py-4 px-6">
-                                <div className="flex items-center justify-center gap-2">
-                                  <button onClick={() => openEditMentor(m)} className="w-8 h-8 rounded-lg bg-slate-800 hover:bg-indigo-650 text-slate-400 hover:text-white flex items-center justify-center cursor-pointer transition-colors border border-slate-700/50 animate-pulse">
-                                    <Edit3 size={13} />
-                                  </button>
-                                  <button onClick={() => handleArchiveMentor(m.id)} className="w-8 h-8 rounded-lg bg-slate-800 hover:bg-rose-600/15 border border-slate-700/50 hover:border-rose-500/25 text-slate-400 hover:text-rose-400 flex items-center justify-center cursor-pointer transition-colors">
-                                    <Archive size={13} />
-                                  </button>
+                                <div className="flex flex-wrap gap-1">
+                                  {m.groups.length === 0 ? (
+                                    <span className="text-slate-500 font-semibold text-xs">Yo'q</span>
+                                  ) : (
+                                    m.groups.map((g, i) => (
+                                      <span key={i} className="bg-slate-800 text-slate-400 border border-slate-750 px-2 py-0.5 rounded text-[10px] font-bold uppercase">
+                                        {g}
+                                      </span>
+                                    ))
+                                  )}
                                 </div>
                               </td>
-                            )}
-                          </tr>
-                        ))
-                      )}
-                    </tbody>
-                  </table>
+                              {canManage && (
+                                <td className="py-4 px-6">
+                                  <div className="flex items-center justify-center gap-2">
+                                    <button onClick={() => openEditMentor(m)} className="w-8 h-8 rounded-lg bg-slate-800 hover:bg-indigo-650 text-slate-400 hover:text-white flex items-center justify-center cursor-pointer transition-colors border border-slate-700/50">
+                                      <Edit3 size={13} />
+                                    </button>
+                                    <button onClick={() => handleArchiveMentor(m.id)} className="w-8 h-8 rounded-lg bg-slate-800 hover:bg-rose-600/15 border border-slate-700/50 hover:border-rose-500/25 text-slate-400 hover:text-rose-400 flex items-center justify-center cursor-pointer transition-colors">
+                                      <Archive size={13} />
+                                    </button>
+                                  </div>
+                                </td>
+                              )}
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               )}
             </div>
@@ -679,38 +797,62 @@ export default function AdminManagement({ activeSubTab }) {
 
           {/* Panel: Admins */}
           {activeTab === 'admins' && isSuperAdmin && (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="border-b border-slate-800 bg-slate-950/40 text-[10px] font-bold text-slate-400 tracking-wider uppercase">
-                    <th className="py-4 px-6">TO'LIQ ISM</th>
-                    <th className="py-4 px-6">USERNAME</th>
-                    <th className="py-4 px-6 text-center">HARAKATLAR</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-800/60 text-slate-300 text-sm">
-                  {adminsList.length === 0 ? (
-                    <tr><td colSpan="3" className="py-8 text-center text-slate-500 font-semibold">Adminlar yo'q</td></tr>
-                  ) : (
-                    adminsList.map(a => (
-                      <tr key={a.id} className="hover:bg-slate-850/20 transition-all">
-                        <td className="py-4 px-6 font-bold text-slate-100">{a.fullName}</td>
-                        <td className="py-4 px-6 font-semibold text-slate-400">{a.username}</td>
-                        <td className="py-4 px-6">
-                          <div className="flex items-center justify-center gap-2">
-                            <button onClick={() => openEditAdmin(a)} className="w-8 h-8 rounded-lg bg-slate-800 hover:bg-indigo-650 text-slate-400 hover:text-white flex items-center justify-center cursor-pointer transition-colors border border-slate-700/50">
-                              <Edit3 size={13} />
-                            </button>
-                            <button onClick={() => handleDeleteAdmin(a.id)} className="w-8 h-8 rounded-lg bg-slate-800 hover:bg-rose-600/15 border border-slate-700/50 hover:border-rose-500/25 text-slate-400 hover:text-rose-400 flex items-center justify-center cursor-pointer transition-colors">
-                              <Trash2 size={13} />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))
+            <div>
+              {/* Search bar */}
+              <div className="p-4 border-b border-slate-800">
+                <div className="relative max-w-md">
+                  <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+                  <input
+                    type="text"
+                    placeholder="Admin ismi yoki username bo'yicha qidirish..."
+                    value={adminSearch}
+                    onChange={e => setAdminSearch(e.target.value)}
+                    className="w-full h-9 pl-9 pr-4 bg-slate-950/60 border border-slate-700 rounded-xl text-slate-200 focus:outline-none focus:border-indigo-500 text-sm placeholder:text-slate-500"
+                  />
+                  {adminSearch && (
+                    <button onClick={() => setAdminSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300">
+                      <X size={14} />
+                    </button>
                   )}
-                </tbody>
-              </table>
+                </div>
+                {adminSearch && <p className="text-xs text-slate-500 mt-1.5">{filteredAdmins.length} ta natija topildi</p>}
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="border-b border-slate-800 bg-slate-950/40 text-[10px] font-bold text-slate-400 tracking-wider uppercase">
+                      <th className="py-4 px-6">TO'LIQ ISM</th>
+                      <th className="py-4 px-6">USERNAME</th>
+                      <th className="py-4 px-6 text-center">HARAKATLAR</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-800/60 text-slate-300 text-sm">
+                    {filteredAdmins.length === 0 ? (
+                      <tr><td colSpan="3" className="py-10 text-center text-slate-500 font-semibold">
+                        <Search size={32} className="mx-auto mb-2 opacity-30" />
+                        {adminSearch ? `"${adminSearch}" bo'yicha natija topilmadi` : "Adminlar yo'q"}
+                      </td></tr>
+                    ) : (
+                      filteredAdmins.map(a => (
+                        <tr key={a.id} className="hover:bg-slate-850/20 transition-all">
+                          <td className="py-4 px-6 font-bold text-slate-100">{a.fullName}</td>
+                          <td className="py-4 px-6 font-semibold text-slate-400">{a.username}</td>
+                          <td className="py-4 px-6">
+                            <div className="flex items-center justify-center gap-2">
+                              <button onClick={() => openEditAdmin(a)} className="w-8 h-8 rounded-lg bg-slate-800 hover:bg-indigo-650 text-slate-400 hover:text-white flex items-center justify-center cursor-pointer transition-colors border border-slate-700/50">
+                                <Edit3 size={13} />
+                              </button>
+                              <button onClick={() => handleDeleteAdmin(a.id)} className="w-8 h-8 rounded-lg bg-slate-800 hover:bg-rose-600/15 border border-slate-700/50 hover:border-rose-500/25 text-slate-400 hover:text-rose-400 flex items-center justify-center cursor-pointer transition-colors">
+                                <Trash2 size={13} />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
         </div>
