@@ -67,9 +67,24 @@ public class AiChatService {
         if (lessonPlans.isEmpty()) {
             contextBuilder.append("Hozircha tizimga dars rejalari yoki mavzular kiritilmagan.\n");
         } else {
+            System.out.println("[Sfera AI] Retrieved " + lessonPlans.size() + " lesson plans for context.");
+            int charLimit = 8000; // Limit context to ~2000 tokens for safety
+            int currentLength = 0;
             for (LessonPlan plan : lessonPlans) {
-                contextBuilder.append("- Dars: ").append(plan.getTitle()).append("\n");
-                contextBuilder.append("  Tushuntirish/Mavzu: ").append(plan.getContent()).append("\n\n");
+                String title = plan.getTitle();
+                String content = plan.getContent() != null ? plan.getContent() : "";
+                String planText = "- Dars: " + title + "\n  Tushuntirish/Mavzu: " + content + "\n\n";
+                
+                if (currentLength + planText.length() > charLimit) {
+                    int remaining = charLimit - currentLength;
+                    if (remaining > 50) {
+                        contextBuilder.append("- Dars: ").append(title).append("\n");
+                        contextBuilder.append("  Tushuntirish/Mavzu: ").append(content, 0, Math.min(content.length(), remaining - 30)).append("...\n\n");
+                    }
+                    break;
+                }
+                contextBuilder.append(planText);
+                currentLength += planText.length();
             }
         }
 
