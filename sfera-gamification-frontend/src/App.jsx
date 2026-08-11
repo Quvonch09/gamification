@@ -10,6 +10,8 @@ import StudentProfile from './pages/StudentProfile';
 import AdminManagement from './pages/AdminManagement';
 import PointHistory from './pages/PointHistory';
 import Attendance from './pages/Attendance';
+import LessonPlans from './pages/LessonPlans';
+import SferaAi from './pages/SferaAi';
 import { LogIn, ShieldAlert, Award, Star, X, AlertTriangle, Search, Sun, Moon } from 'lucide-react';
 import axios from 'axios';
 import CustomSelect from './components/CustomSelect';
@@ -280,6 +282,10 @@ function AppContent() {
         return <AdminManagement key="admins" activeSubTab="admins" refreshTrigger={refreshTrigger} />;
       case 'history':
         return <PointHistory refreshTrigger={refreshTrigger} />;
+      case 'lessonplans':
+        return <LessonPlans />;
+      case 'sfera-ai':
+        return <SferaAi />;
       case 'profile':
         return <StudentProfile studentId={selectedStudentId} setCurrentPage={setCurrentPage} refreshTrigger={refreshTrigger} />;
       default:

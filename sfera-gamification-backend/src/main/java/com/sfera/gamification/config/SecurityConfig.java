@@ -78,6 +78,13 @@ public class SecurityConfig {
                 .requestMatchers("/api/admin-users/**").hasRole("SUPER_ADMIN")
                 // Block students from admin management pages
                 .requestMatchers("/api/admin/**").hasAnyRole("SUPER_ADMIN", "ADMIN", "MENTOR")
+                // Lesson plans endpoints
+                .requestMatchers(HttpMethod.GET, "/api/lesson-plans/**").hasAnyRole("SUPER_ADMIN", "ADMIN", "MENTOR", "STUDENT")
+                .requestMatchers(HttpMethod.POST, "/api/lesson-plans/**").hasAnyRole("SUPER_ADMIN", "ADMIN", "MENTOR")
+                .requestMatchers(HttpMethod.PUT, "/api/lesson-plans/**").hasAnyRole("SUPER_ADMIN", "ADMIN", "MENTOR")
+                .requestMatchers(HttpMethod.DELETE, "/api/lesson-plans/**").hasAnyRole("SUPER_ADMIN", "ADMIN", "MENTOR")
+                // AI chat endpoint
+                .requestMatchers("/api/ai/**").hasAnyRole("SUPER_ADMIN", "ADMIN", "MENTOR", "STUDENT")
                 // All others require authentication
                 .anyRequest().authenticated()
             );

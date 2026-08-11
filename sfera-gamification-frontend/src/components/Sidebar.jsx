@@ -11,7 +11,8 @@ import {
   ChevronLeft, 
   ChevronRight,
   CalendarCheck,
-  Shield
+  Shield,
+  Sparkles
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -28,6 +29,7 @@ export default function Sidebar({ currentPage, setCurrentPage, collapsed, setCol
       { id: 'dashboard',   name: 'Dashboard',   icon: LayoutDashboard },
       { id: 'davomat',     name: 'Davomat',     icon: CalendarCheck },
       { id: 'leaderboard', name: 'Reyting',     icon: Trophy },
+      { id: 'sfera-ai',    name: 'Sfera AI',    icon: Sparkles },
       { id: 'history',     name: 'Ball tarixi', icon: History },
     ];
   } else if (isAdmin) {
@@ -37,6 +39,7 @@ export default function Sidebar({ currentPage, setCurrentPage, collapsed, setCol
       { id: 'leaderboard', name: 'Leaderboard', icon: Trophy },
       { id: 'students',    name: 'Students',    icon: Users },
       { id: 'groups',      name: 'Groups',      icon: FolderGit },
+      { id: 'lessonplans', name: 'Dars Rejalari', icon: BookOpen },
     ];
   } else { // SUPER_ADMIN or MENTOR
     menuItems = [
@@ -46,6 +49,7 @@ export default function Sidebar({ currentPage, setCurrentPage, collapsed, setCol
       { id: 'leaderboard', name: 'Leaderboard', icon: Trophy },
       { id: 'students',    name: 'Students',    icon: Users },
       { id: 'groups',      name: 'Groups',      icon: FolderGit },
+      { id: 'lessonplans', name: 'Dars Rejalari', icon: BookOpen },
       ...(isSuperAdmin ? [
         { id: 'mentors', name: 'Mentors', icon: UserCheck },
         { id: 'admins', name: 'Admins', icon: Shield }
