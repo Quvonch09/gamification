@@ -6,131 +6,324 @@
 
 /* Dark mode (default) */
 :root, html.dark {
-  --bg-base:       #020617;   /* slate-950 */
-  --bg-card:       #0f172a;   /* slate-900 */
-  --bg-input:      #1e293b;   /* slate-850 */
-  --bg-border:     #1e293b;   /* slate-800 */
-  --text-primary:  #f1f5f9;   /* slate-100 */
-  --text-secondary:#94a3b8;   /* slate-400 */
-  --text-muted:    #475569;   /* slate-600 */
-  --sidebar-bg:    #020617;
-  --sidebar-text:  #94a3b8;
-  --sidebar-active:#4f46e5;
-  --header-bg:     #0f172a;
+  --bg-base:         #020617;
+  --bg-card:         #0f172a;
+  --bg-input:        #1e293b;
+  --bg-border:       #1e293b;
+  --text-primary:    #f1f5f9;
+  --text-secondary:  #94a3b8;
+  --text-muted:      #475569;
+  --sidebar-bg:      #0f172a;
+  --sidebar-text:    #94a3b8;
+  --sidebar-active:  #4f46e5;
+  --header-bg:       #0f172a;
   --scrollbar-thumb: #334155;
-  --table-hover:   rgba(30,41,59,0.3);
+  --table-hover:     rgba(30,41,59,0.3);
   color-scheme: dark;
 }
 
 /* Light mode */
 html.light {
-  --bg-base:       #f1f5f9;   /* slate-100 */
-  --bg-card:       #ffffff;
-  --bg-input:      #f8fafc;
-  --bg-border:     #e2e8f0;   /* slate-200 */
-  --text-primary:  #0f172a;   /* slate-900 */
-  --text-secondary:#475569;   /* slate-600 */
-  --text-muted:    #94a3b8;   /* slate-400 */
-  --sidebar-bg:    #ffffff;
-  --sidebar-text:  #64748b;
-  --sidebar-active:#4f46e5;
-  --header-bg:     #ffffff;
+  --bg-base:         #f1f5f9;
+  --bg-card:         #ffffff;
+  --bg-input:        #f8fafc;
+  --bg-border:       #e2e8f0;
+  --text-primary:    #0f172a;
+  --text-secondary:  #475569;
+  --text-muted:      #94a3b8;
+  --sidebar-bg:      #ffffff;
+  --sidebar-text:    #475569;
+  --sidebar-active:  #4f46e5;
+  --header-bg:       #ffffff;
   --scrollbar-thumb: #cbd5e1;
-  --table-hover:   rgba(241,245,249,0.8);
+  --table-hover:     rgba(241,245,249,0.8);
   color-scheme: light;
 }
 
-/* Apply theme variables to base elements */
+/* ============================================
+   BASE STYLES
+   ============================================ */
+
 body {
   background-color: var(--bg-base);
   color: var(--text-primary);
   transition: background-color 0.25s ease, color 0.25s ease;
 }
 
-/* Light mode input calendar indicator */
-html.light input[type="date"]::-webkit-calendar-picker-indicator {
-  filter: invert(0.3);
-}
-
-/* Light mode utility overrides */
-html.light .bg-slate-950 { background-color: var(--bg-base) !important; }
-html.light .bg-slate-900 { background-color: var(--bg-card) !important; }
-html.light .bg-slate-850 { background-color: var(--bg-input) !important; }
-html.light .bg-slate-800 { background-color: #e2e8f0 !important; }
-html.light .border-slate-900 { border-color: #cbd5e1 !important; }
-html.light .border-slate-850 { border-color: #cbd5e1 !important; }
-html.light .border-slate-800 { border-color: #cbd5e1 !important; }
-html.light .border-slate-700 { border-color: #94a3b8 !important; }
-
-html.light .text-slate-100 { color: #0f172a !important; }
-html.light .text-slate-200 { color: #1e293b !important; }
-html.light .text-slate-300 { color: #334155 !important; }
-html.light .text-slate-400 { color: #475569 !important; }
-html.light .text-slate-500 { color: #64748b !important; }
-html.light .text-slate-600 { color: #94a3b8 !important; }
-
-/* Slate Opacity Backgrounds Overrides */
-html.light .bg-slate-950\/80 { background-color: rgba(241, 245, 249, 0.8) !important; }
-html.light .bg-slate-950\/60 { background-color: rgba(241, 245, 249, 0.6) !important; }
-html.light .bg-slate-950\/50 { background-color: rgba(241, 245, 249, 0.5) !important; }
-html.light .bg-slate-950\/40 { background-color: rgba(241, 245, 249, 0.4) !important; }
-html.light .bg-slate-950\/30 { background-color: rgba(241, 245, 249, 0.3) !important; }
-html.light .bg-slate-950\/20 { background-color: rgba(241, 245, 249, 0.2) !important; }
-
-html.light .bg-slate-900\/95 { background-color: rgba(255, 255, 255, 0.95) !important; }
-html.light .bg-slate-900\/60 { background-color: rgba(255, 255, 255, 0.6) !important; }
-html.light .bg-slate-900\/40 { background-color: rgba(255, 255, 255, 0.4) !important; }
-html.light .bg-slate-900\/30 { background-color: rgba(255, 255, 255, 0.3) !important; }
-
-html.light .bg-slate-800\/60 { background-color: rgba(226, 232, 240, 0.6) !important; }
-html.light .bg-slate-800\/40 { background-color: rgba(226, 232, 240, 0.4) !important; }
-html.light .bg-slate-850\/30 { background-color: rgba(248, 250, 252, 0.3) !important; }
-html.light .bg-slate-850\/20 { background-color: rgba(248, 250, 252, 0.2) !important; }
-
-/* Slate Opacity Borders Overrides */
-html.light .border-slate-800\/80 { border-color: rgba(203, 213, 225, 0.8) !important; }
-html.light .border-slate-800\/60 { border-color: rgba(203, 213, 225, 0.6) !important; }
-html.light .border-slate-800\/50 { border-color: rgba(203, 213, 225, 0.5) !important; }
-html.light .border-slate-700\/50 { border-color: rgba(148, 163, 184, 0.5) !important; }
-html.light .border-slate-700\/80 { border-color: rgba(148, 163, 184, 0.8) !important; }
-
-html.light .divide-slate-800\/60 > * + * { border-color: #cbd5e1 !important; }
-html.light .hover\:bg-slate-850\/30:hover { background-color: #f1f5f9 !important; }
-
-/* Scrollbar styling */
-::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 3px; }
-
-/* Scrollbar hide utility for mobile tab navigation */
-.scrollbar-hide {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
-.scrollbar-hide::-webkit-scrollbar {
-  display: none;
-}
-
-/* Dark date input for mobile browsers */
-input[type="date"]::-webkit-calendar-picker-indicator {
-  filter: invert(0.6);
-  cursor: pointer;
-}
-
-/* Prevent text size adjustment on mobile */
-html {
-  -webkit-text-size-adjust: 100%;
-  text-size-adjust: 100%;
-}
-
-/* Better tap targets on mobile */
-button, [role="button"] {
-  touch-action: manipulation;
-}
-
-/* Smooth transitions for theme change */
+/* Smooth theme transitions */
 *, *::before, *::after {
-  transition-property: background-color, border-color, color;
+  transition-property: background-color, border-color, color, box-shadow;
   transition-duration: 0.2s;
   transition-timing-function: ease;
 }
+
+/* Scrollbar */
+::-webkit-scrollbar        { width: 6px; height: 6px; }
+::-webkit-scrollbar-track  { background: transparent; }
+::-webkit-scrollbar-thumb  { background: var(--scrollbar-thumb); border-radius: 3px; }
+
+/* Scrollbar hide utility */
+.scrollbar-hide                  { -ms-overflow-style: none; scrollbar-width: none; }
+.scrollbar-hide::-webkit-scrollbar { display: none; }
+
+/* Prevent mobile text resize */
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+
+/* Better tap targets on mobile */
+button, [role="button"] { touch-action: manipulation; }
+
+/* Date picker icon */
+input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.6); cursor: pointer; }
+html.light input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.3); }
+
+/* ============================================
+   LIGHT MODE — COMPREHENSIVE OVERRIDE SYSTEM
+   Clean whites, slate blues, soft shadows
+   ============================================ */
+
+/* ======= BACKGROUNDS ======= */
+html.light .bg-slate-950      { background-color: #f1f5f9 !important; }
+html.light .bg-slate-900      { background-color: #ffffff !important; }
+html.light .bg-slate-850      { background-color: #f8fafc !important; }
+html.light .bg-slate-800      { background-color: #e2e8f0 !important; }
+html.light .bg-slate-700      { background-color: #cbd5e1 !important; }
+
+/* Opacity bg variants */
+html.light .bg-slate-950\/80  { background-color: rgba(248,250,252,0.95) !important; }
+html.light .bg-slate-950\/70  { background-color: rgba(248,250,252,0.90) !important; }
+html.light .bg-slate-950\/60  { background-color: rgba(248,250,252,0.88) !important; }
+html.light .bg-slate-950\/50  { background-color: #f8fafc !important; }
+html.light .bg-slate-950\/40  { background-color: #f1f5f9 !important; }
+html.light .bg-slate-950\/20  { background-color: #f8fafc !important; }
+html.light .bg-slate-900\/40  { background-color: rgba(255,255,255,0.93) !important; }
+html.light .bg-slate-900\/30  { background-color: rgba(255,255,255,0.96) !important; }
+html.light .bg-slate-800\/60  { background-color: rgba(226,232,240,0.6) !important; }
+html.light .bg-slate-800\/40  { background-color: rgba(226,232,240,0.4) !important; }
+html.light .bg-slate-850\/30  { background-color: rgba(241,245,249,0.8) !important; }
+html.light .bg-slate-850\/20  { background-color: rgba(241,245,249,0.7) !important; }
+
+/* ======= TEXT COLORS ======= */
+html.light .text-white        { color: #0f172a !important; }
+html.light .text-slate-100    { color: #0f172a !important; }
+html.light .text-slate-200    { color: #0f172a !important; }
+html.light .text-slate-300    { color: #1e293b !important; }
+html.light .text-slate-355    { color: #334155 !important; }
+html.light .text-slate-400    { color: #334155 !important; }
+html.light .text-slate-500    { color: #475569 !important; }
+html.light .text-slate-600    { color: #64748b !important; }
+
+/* Keep text white on primary colored buttons/badges */
+html.light .bg-indigo-600,
+html.light .bg-indigo-600 *,
+html.light .bg-amber-600,
+html.light .bg-amber-600 *,
+html.light .from-amber-500,
+html.light .from-amber-500 *,
+html.light .bg-emerald-500,
+html.light .bg-emerald-500 *,
+html.light .bg-rose-600,
+html.light .bg-rose-600 *,
+html.light .bg-rose-500,
+html.light .bg-rose-500 *,
+html.light .bg-blue-600,
+html.light .bg-blue-600 *,
+html.light .bg-purple-600,
+html.light .bg-purple-600 *,
+html.light .bg-gradient-to-r.from-amber-500,
+html.light .bg-gradient-to-r.from-amber-500 * {
+  color: #ffffff !important;
+}
+
+/* Make SVG chart texts dark in light mode */
+html.light svg text {
+  fill: #334155 !important;
+}
+
+/* ======= BORDERS ======= */
+html.light .border-slate-900          { border-color: #e2e8f0 !important; }
+html.light .border-slate-800          { border-color: #e2e8f0 !important; }
+html.light .border-slate-800\/80      { border-color: rgba(226,232,240,0.8) !important; }
+html.light .border-slate-800\/60      { border-color: rgba(226,232,240,0.6) !important; }
+html.light .border-slate-800\/50      { border-color: rgba(226,232,240,0.5) !important; }
+html.light .border-slate-850          { border-color: #e2e8f0 !important; }
+html.light .border-slate-700          { border-color: #cbd5e1 !important; }
+html.light .border-slate-700\/50      { border-color: rgba(203,213,225,0.5) !important; }
+
+/* ======= HOVER STATES ======= */
+html.light .hover\:bg-slate-850\/30:hover  { background-color: #f1f5f9 !important; }
+html.light .hover\:bg-slate-850\/20:hover  { background-color: #f8fafc !important; }
+html.light .hover\:bg-slate-800\/60:hover  { background-color: rgba(226,232,240,0.6) !important; }
+html.light .hover\:bg-slate-800:hover      { background-color: #e2e8f0 !important; }
+html.light .hover\:bg-slate-700:hover      { background-color: #cbd5e1 !important; }
+html.light .hover\:bg-slate-750:hover      { background-color: #e2e8f0 !important; }
+html.light .hover\:text-white:hover        { color: #0f172a !important; }
+html.light .hover\:text-slate-100:hover    { color: #0f172a !important; }
+html.light .hover\:text-slate-200:hover    { color: #1e293b !important; }
+html.light .hover\:text-slate-300:hover    { color: #334155 !important; }
+
+/* ======= DIVIDE BORDERS (table rows) ======= */
+html.light .divide-slate-800\/60 > * + * { border-color: #e2e8f0 !important; }
+html.light .divide-slate-850 > * + *     { border-color: #e2e8f0 !important; }
+html.light .divide-slate-800\/40 > * + * { border-color: #e2e8f0 !important; }
+
+/* ======= LAYOUT WRAPPER ======= */
+html.light .flex.bg-slate-950 {
+  background-color: #f1f5f9 !important;
+  color: #0f172a !important;
+}
+
+/* ======= SIDEBAR ======= */
+html.light aside {
+  background-color: #ffffff !important;
+  border-right-color: #e2e8f0 !important;
+  color: #475569 !important;
+  box-shadow: 2px 0 16px rgba(15,23,42,0.06) !important;
+}
+html.light nav button:not(.bg-indigo-600) {
+  color: #475569 !important;
+}
+html.light nav button:not(.bg-indigo-600):hover {
+  background-color: #f1f5f9 !important;
+  color: #1e293b !important;
+}
+
+/* ======= HEADER ======= */
+html.light header {
+  background-color: rgba(255,255,255,0.97) !important;
+  border-bottom-color: #e2e8f0 !important;
+  box-shadow: 0 1px 12px rgba(15,23,42,0.07) !important;
+}
+
+/* ======= MAIN AREA ======= */
+html.light main {
+  background-color: #f1f5f9 !important;
+}
+
+/* ======= CARDS ======= */
+html.light .rounded-2xl.bg-slate-900,
+html.light .rounded-xl.bg-slate-900 {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  box-shadow: 0 1px 16px rgba(15,23,42,0.07) !important;
+}
+
+/* ======= MODAL BACKDROP ======= */
+html.light .fixed.inset-0.bg-slate-950\/80 {
+  background-color: rgba(15,23,42,0.5) !important;
+}
+html.light .fixed.inset-0.z-\[100\] > div:first-child {
+  background-color: rgba(15,23,42,0.45) !important;
+}
+
+/* ======= MODAL CARDS ======= */
+html.light form.bg-slate-900 {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  box-shadow: 0 8px 48px rgba(15,23,42,0.16) !important;
+}
+
+/* ======= INPUTS ======= */
+html.light input[type="text"],
+html.light input[type="password"],
+html.light input[type="number"],
+html.light input[type="date"],
+html.light input[type="email"],
+html.light textarea,
+html.light select {
+  background-color: #f8fafc !important;
+  border-color: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+html.light input::placeholder,
+html.light textarea::placeholder { color: #94a3b8 !important; }
+html.light input:focus,
+html.light textarea:focus {
+  border-color: #6366f1 !important;
+  box-shadow: 0 0 0 3px rgba(99,102,241,0.12) !important;
+  outline: none !important;
+}
+
+/* ======= TABLES ======= */
+html.light table thead tr    { background-color: #f8fafc !important; }
+html.light table thead th    { color: #64748b !important; border-bottom-color: #e2e8f0 !important; }
+html.light table tbody tr:hover { background-color: #f1f5f9 !important; }
+html.light table tbody td    { color: #1e293b !important; }
+
+/* ======= AUTOCOMPLETE DROPDOWN ======= */
+html.light .max-h-40.overflow-y-auto,
+html.light .bg-slate-900.shadow-xl {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  box-shadow: 0 4px 28px rgba(15,23,42,0.13) !important;
+}
+html.light .max-h-40.overflow-y-auto button {
+  color: #334155 !important;
+}
+html.light .max-h-40.overflow-y-auto button:hover {
+  background-color: #eef2ff !important;
+  color: #4f46e5 !important;
+}
+
+/* ======= PILL / BADGE BUTTONS (secondary) ======= */
+html.light button.bg-slate-800,
+html.light .bg-slate-800.border,
+html.light .bg-slate-800.hover\:bg-slate-750 {
+  background-color: #f1f5f9 !important;
+  border-color: #e2e8f0 !important;
+  color: #334155 !important;
+}
+
+/* ======= ICON BUTTONS ======= */
+html.light .w-9.h-9.rounded-lg.bg-slate-800,
+html.light .w-8.h-8.rounded-lg.bg-slate-800 {
+  background-color: #f1f5f9 !important;
+  border-color: #e2e8f0 !important;
+  color: #64748b !important;
+}
+html.light .w-9.h-9.rounded-full.bg-slate-800,
+html.light .w-10.h-10.rounded-full.bg-slate-800 {
+  background-color: #e2e8f0 !important;
+  border-color: rgba(99,102,241,0.25) !important;
+}
+
+/* ======= GRADIENT TEXT (SFERA logo) ======= */
+html.light .from-indigo-400.to-cyan-400 {
+  background-image: linear-gradient(to right, #4f46e5, #0891b2) !important;
+}
+
+/* ======= LOGIN PAGE ======= */
+html.light .min-h-screen.bg-slate-950,
+html.light .min-h-screen.bg-slate-950.flex {
+  background-color: #eef2ff !important;
+}
+html.light .bg-slate-900\/40.backdrop-blur-xl {
+  background-color: rgba(255,255,255,0.9) !important;
+  border-color: #e2e8f0 !important;
+  box-shadow: 0 8px 48px rgba(15,23,42,0.14) !important;
+}
+
+/* ======= SVG CHART GRID LINES ======= */
+html.light svg line[stroke="#1e293b"] { stroke: #e2e8f0 !important; }
+
+/* ======= ATTENDANCE PILL GROUP ======= */
+html.light .bg-slate-950\/40.rounded-lg,
+html.light .bg-slate-950\/40.border-slate-800 {
+  background-color: #f8fafc !important;
+  border-color: #e2e8f0 !important;
+}
+
+/* ======= MINI INFO PANEL (quick award preview) ======= */
+html.light .bg-slate-950\/40 {
+  background-color: #f8fafc !important;
+  border-color: #e2e8f0 !important;
+}
+
+/* ======= LOADING SKELETON ======= */
+html.light .animate-pulse.bg-slate-800\/40 {
+  background-color: rgba(226,232,240,0.5) !important;
+}
+
+/* ======= SHADOW ADJUSTMENTS ======= */
+html.light .shadow-2xl { box-shadow: 0 4px 32px rgba(15,23,42,0.09) !important; }
+html.light .shadow-lg  { box-shadow: 0 2px 16px rgba(15,23,42,0.07) !important; }
+html.light .shadow-md  { box-shadow: 0 1px 8px  rgba(15,23,42,0.06) !important; }

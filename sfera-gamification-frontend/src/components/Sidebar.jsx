@@ -10,11 +10,12 @@ import {
   LogOut, 
   ChevronLeft, 
   ChevronRight,
-  CalendarCheck
+  CalendarCheck,
+  Shield
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
-export default function Sidebar({ currentPage, setCurrentPage, collapsed, setCollapsed }) {
+export default function Sidebar({ currentPage, setCurrentPage, collapsed, setCollapsed, mobileOpen, setMobileOpen }) {
   const { user, logout } = useAuth();
   const isSuperAdmin = user?.role === 'SUPER_ADMIN';
   const isAdmin = user?.role === 'ADMIN';
@@ -45,7 +46,10 @@ export default function Sidebar({ currentPage, setCurrentPage, collapsed, setCol
       { id: 'leaderboard', name: 'Leaderboard', icon: Trophy },
       { id: 'students',    name: 'Students',    icon: Users },
       { id: 'groups',      name: 'Groups',      icon: FolderGit },
-      ...(isSuperAdmin ? [{ id: 'mentors', name: 'Mentors', icon: UserCheck }] : []),
+      ...(isSuperAdmin ? [
+        { id: 'mentors', name: 'Mentors', icon: UserCheck },
+        { id: 'admins', name: 'Admins', icon: Shield }
+      ] : []),
       { id: 'history',     name: 'Point History', icon: History },
     ];
   }

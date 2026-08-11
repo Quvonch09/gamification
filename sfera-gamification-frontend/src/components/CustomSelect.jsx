@@ -1,9 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { ChevronDown, Check } from 'lucide-react';
+import { useTheme } from '../context/ThemeContext';
 
 export default function CustomSelect({ value, onChange, options, placeholder, className = '' }) {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef(null);
+  const { isDark } = useTheme();
 
   // Find the label for the selected value
   const selectedOption = options.find(opt => String(opt.value) === String(value));
@@ -25,35 +27,50 @@ export default function CustomSelect({ value, onChange, options, placeholder, cl
     setIsOpen(false);
   };
 
+  // Dynamic classes based on theme
+  const triggerClass = isDark
+    ? 'bg-slate-900/60 border-slate-800/80 text-slate-200 hover:border-indigo-500/50 focus:border-indigo-500 focus:ring-indigo-500/35 shadow-md'
+    : 'bg-white border-slate-200 text-slate-700 hover:border-indigo-400 focus:border-indigo-500 focus:ring-indigo-500/15 shadow-sm';
+
+  const dropdownClass = isDark
+    ? 'bg-slate-900/98 border-slate-800 divide-slate-850'
+    : 'bg-white border-slate-200 divide-slate-100 shadow-xl';
+
+  const optionBaseClass = isDark
+    ? 'text-slate-300 hover:bg-indigo-600/20 hover:text-white'
+    : 'text-slate-800 hover:bg-indigo-50 hover:text-indigo-700';
+
+  const placeholderClass = isDark
+    ? (value === '' || value === undefined ? 'bg-indigo-600/10 text-indigo-400 font-bold' : 'text-slate-400 hover:bg-slate-800/60 hover:text-slate-200')
+    : (value === '' || value === undefined ? 'bg-indigo-50 text-indigo-600 font-bold' : 'text-slate-700 hover:bg-slate-50 hover:text-slate-700');
+
+  const chevronClass = isDark ? 'text-slate-400' : 'text-slate-400';
+
   return (
     <div className={`relative w-full ${className}`} ref={containerRef}>
       {/* Trigger Button */}
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full h-10 px-4 bg-slate-900/60 border border-slate-800/80 hover:border-indigo-500/50 rounded-xl text-slate-200 text-sm font-semibold flex items-center justify-between transition-all duration-200 cursor-pointer shadow-md focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/35"
+        className={`w-full h-10 px-4 border rounded-xl text-sm font-semibold flex items-center justify-between transition-all duration-200 cursor-pointer focus:outline-none focus:ring-1 ${triggerClass}`}
       >
         <span className="truncate">{displayLabel}</span>
-        <ChevronDown 
-          size={16} 
-          className={`text-slate-400 transition-transform duration-200 shrink-0 ml-2 ${isOpen ? 'rotate-180 text-indigo-400' : ''}`} 
+        <ChevronDown
+          size={16}
+          className={`transition-transform duration-200 shrink-0 ml-2 ${chevronClass} ${isOpen ? 'rotate-180 text-indigo-400' : ''}`}
         />
       </button>
 
       {/* Dropdown Options List */}
       {isOpen && (
-        <div className="absolute left-0 right-0 mt-1.5 max-h-60 overflow-y-auto bg-slate-900/95 backdrop-blur-xl border border-slate-800 rounded-xl shadow-2xl z-[100] py-1 animate-fadeIn divide-y divide-slate-850 scrollbar-thin scrollbar-thumb-slate-800 scrollbar-track-transparent">
+        <div className={`absolute left-0 right-0 mt-1.5 max-h-60 overflow-y-auto backdrop-blur-xl border rounded-xl z-[100] py-1 divide-y scrollbar-hide ${dropdownClass}`}>
           {placeholder && (
             <div
               onClick={() => handleOptionClick('')}
-              className={`px-4 py-2.5 text-xs font-semibold cursor-pointer flex items-center justify-between transition-colors ${
-                !value 
-                  ? 'bg-indigo-600/10 text-indigo-400 font-bold' 
-                  : 'text-slate-400 hover:bg-slate-800/60 hover:text-slate-200'
-              }`}
+              className={`px-4 py-2.5 text-xs font-semibold cursor-pointer flex items-center justify-between transition-colors ${placeholderClass}`}
             >
               <span>{placeholder}</span>
-              {!value && <Check size={14} className="text-indigo-400" />}
+              {(!value || value === '') && <Check size={14} className="text-indigo-400" />}
             </div>
           )}
           {options.map((opt) => {
@@ -63,9 +80,9 @@ export default function CustomSelect({ value, onChange, options, placeholder, cl
                 key={opt.value}
                 onClick={() => handleOptionClick(opt.value)}
                 className={`px-4 py-2.5 text-xs font-semibold cursor-pointer flex items-center justify-between transition-colors ${
-                  isSelected 
-                    ? 'bg-indigo-600 text-white font-bold' 
-                    : 'text-slate-300 hover:bg-indigo-650 hover:text-white'
+                  isSelected
+                    ? 'bg-indigo-600 text-white font-bold'
+                    : optionBaseClass
                 }`}
               >
                 <span className="truncate">{opt.label}</span>

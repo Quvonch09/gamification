@@ -10,7 +10,7 @@ import StudentProfile from './pages/StudentProfile';
 import AdminManagement from './pages/AdminManagement';
 import PointHistory from './pages/PointHistory';
 import Attendance from './pages/Attendance';
-import { LogIn, ShieldAlert, Award, Star, X, AlertTriangle, Search } from 'lucide-react';
+import { LogIn, ShieldAlert, Award, Star, X, AlertTriangle, Search, Sun, Moon } from 'lucide-react';
 import axios from 'axios';
 import CustomSelect from './components/CustomSelect';
 
@@ -198,7 +198,7 @@ function AppContent() {
             <div className="w-16 h-16 rounded-2xl bg-indigo-600 flex items-center justify-center font-black text-2xl text-white shadow-xl shadow-indigo-600/30 mx-auto">
               S
             </div>
-            <h1 className="text-3xl font-black tracking-wider text-white">SFERA GAMIFICATION</h1>
+            <h1 className="text-3xl font-black tracking-wider text-slate-100">SFERA GAMIFICATION</h1>
             <p className="text-sm text-slate-400 font-medium">Sfera IT Academy talabalar reytingi nazorati</p>
           </div>
 
@@ -206,7 +206,7 @@ function AppContent() {
           <div className="bg-slate-900/40 backdrop-blur-xl border border-slate-800 rounded-3xl p-8 shadow-2xl relative">
             <div className="flex items-center gap-2 mb-6">
               <LogIn className="text-indigo-400" size={20} />
-              <h2 className="text-lg font-bold text-white">Tizimga Kirish</h2>
+              <h2 className="text-lg font-bold text-slate-100">Tizimga Kirish</h2>
             </div>
 
             {loginError && (
@@ -276,6 +276,8 @@ function AppContent() {
         return <AdminManagement key="groups" activeSubTab="groups" refreshTrigger={refreshTrigger} />;
       case 'mentors':
         return <AdminManagement key="mentors" activeSubTab="mentors" refreshTrigger={refreshTrigger} />;
+      case 'admins':
+        return <AdminManagement key="admins" activeSubTab="admins" refreshTrigger={refreshTrigger} />;
       case 'history':
         return <PointHistory refreshTrigger={refreshTrigger} />;
       case 'profile':
@@ -313,6 +315,16 @@ function AppContent() {
                 <Award size={14} /> Tezkor Baholash
               </button>
             )}
+
+            {/* Theme Toggle Button */}
+            <button
+              onClick={toggleTheme}
+              title={isDark ? "Yorug' rejimga o'tish" : "Qorong'u rejimga o'tish"}
+              className="w-9 h-9 rounded-xl bg-slate-800 border border-slate-700/50 flex items-center justify-center text-slate-400 hover:text-amber-400 hover:bg-slate-700 cursor-pointer transition-all"
+            >
+              {isDark ? <Sun size={18} /> : <Moon size={18} />}
+            </button>
+
             <div className="text-right">
               <span className="block text-xs font-semibold text-slate-400">{user.fullName}</span>
               <span className="inline-block text-[9px] uppercase font-black tracking-wider text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded border border-indigo-500/10 mt-0.5">
@@ -338,9 +350,9 @@ function AppContent() {
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <div className="flex items-center gap-2 text-amber-500">
                 <Award size={20} />
-                <h3 className="font-extrabold text-white text-base">Tezkor Baholash</h3>
+                <h3 className="font-extrabold text-slate-100 text-base">Tezkor Baholash</h3>
               </div>
-              <button type="button" onClick={() => setShowQuickAwardModal(false)} className="text-slate-400 hover:text-white cursor-pointer border-0 bg-transparent"><X size={18} /></button>
+              <button type="button" onClick={() => setShowQuickAwardModal(false)} className="text-slate-400 hover:text-slate-100 cursor-pointer border-0 bg-transparent"><X size={18} /></button>
             </div>
 
             {quickAwardError && <div className="p-3 bg-rose-500/10 border border-rose-500/20 rounded-lg text-rose-400 text-xs font-semibold">{quickAwardError}</div>}

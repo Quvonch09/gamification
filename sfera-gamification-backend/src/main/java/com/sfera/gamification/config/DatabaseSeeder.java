@@ -69,10 +69,12 @@ public class DatabaseSeeder implements CommandLineRunner {
         }
 
         if (userRepository.count() > 0) {
+            // Ensure INITIAL_POINTS rule exists
             if (pointRuleRepository.findByCode("INITIAL_POINTS").isEmpty()) {
                 PointRule initialPoints = PointRule.builder().code("INITIAL_POINTS").name("Tizimdan oldingi yig'ilgan ballar").points(0).type("POSITIVE").active(true).build();
                 pointRuleRepository.save(initialPoints);
             }
+            // Ensure limited admin exists
             if (userRepository.findByUsername("admin_limited").isEmpty()) {
                 User adminLimited = User.builder()
                         .username("admin_limited")
@@ -83,6 +85,14 @@ public class DatabaseSeeder implements CommandLineRunner {
                         .build();
                 userRepository.save(adminLimited);
             }
+            // FORCE upgrade: ensure 'admin' user always has SUPER_ADMIN role
+            // (old DB may have stored it as ADMIN before the role rename)
+            userRepository.findByUsername("admin").ifPresent(existingAdmin -> {
+                if (!"SUPER_ADMIN".equals(existingAdmin.getRole())) {
+                    existingAdmin.setRole("SUPER_ADMIN");
+                    userRepository.save(existingAdmin);
+                }
+            });
             return; // Database already seeded
         }
 

@@ -12,7 +12,8 @@ import {
   X,
   PlusCircle,
   FileSpreadsheet,
-  ChevronDown
+  ChevronDown,
+  Trash2
 } from 'lucide-react';
 import MentorMonitor from './MentorMonitor';
 import { useAuth } from '../context/AuthContext';
@@ -26,11 +27,12 @@ export default function AdminManagement({ activeSubTab }) {
   const isAdmin = user?.role === 'ADMIN';
   const canManage = isSuperAdmin;
 
-  // Tabs: students, groups, mentors, courses
+  // Tabs: students, groups, mentors, courses, admins
   const [activeTab, setActiveTab] = useState(activeSubTab || 'students');
   
   // Lists
   const [students, setStudents] = useState([]);
+  const [adminsList, setAdminsList] = useState([]);
   
   // Loaders
   const [loading, setLoading] = useState(false);
@@ -40,6 +42,7 @@ export default function AdminManagement({ activeSubTab }) {
   const [showGroupModal, setShowGroupModal] = useState(false);
   const [showMentorModal, setShowMentorModal] = useState(false);
   const [showCourseModal, setShowCourseModal] = useState(false);
+  const [showAdminModal, setShowAdminModal] = useState(false);
 
   // Edit states
   const [editingItem, setEditingItem] = useState(null);
@@ -49,6 +52,7 @@ export default function AdminManagement({ activeSubTab }) {
   const [groupForm, setGroupForm] = useState({ name: '', courseId: '', mentorId: '' });
   const [mentorForm, setMentorForm] = useState({ fullName: '', username: '', password: '' });
   const [courseForm, setCourseForm] = useState({ name: '' });
+  const [adminForm, setAdminForm] = useState({ fullName: '', username: '', password: '' });
 
   // Error/Success messages
   const [errorMessage, setErrorMessage] = useState('');
@@ -65,13 +69,17 @@ export default function AdminManagement({ activeSubTab }) {
   const [deleteConfirm, setDeleteConfirm] = useState({
     show: false,
     id: null,
-    type: '', // 'student' | 'group' | 'mentor'
+    type: '', // 'student' | 'group' | 'mentor' | 'admin-user'
     message: ''
   });
 
   useEffect(() => {
-    loadAllData();
-  }, []);
+    if (activeTab === 'admins' && isSuperAdmin) {
+      loadAdmins();
+    } else {
+      loadAllData();
+    }
+  }, [activeTab]);
 
   const loadAllData = () => {
     setLoading(true);
@@ -86,11 +94,25 @@ export default function AdminManagement({ activeSubTab }) {
       .finally(() => setLoading(false));
   };
 
+  const loadAdmins = () => {
+    setLoading(true);
+    axios.get('/api/admin-users')
+      .then(res => {
+        setAdminsList(res.data);
+      })
+      .catch(err => {
+        console.error("Error loading admins data", err);
+        setErrorMessage("Adminlar ma'lumotlarini yuklashda xatolik yuz berdi.");
+      })
+      .finally(() => setLoading(false));
+  };
+
   const handleCloseModals = () => {
     setShowStudentModal(false);
     setShowGroupModal(false);
     setShowMentorModal(false);
     setShowCourseModal(false);
+    setShowAdminModal(false);
     setShowBulkModal(false);
     setEditingItem(null);
     setErrorMessage('');
@@ -100,7 +122,51 @@ export default function AdminManagement({ activeSubTab }) {
     setGroupForm({ name: '', courseId: '', mentorId: '' });
     setMentorForm({ fullName: '', username: '', password: '' });
     setCourseForm({ name: '' });
+    setAdminForm({ fullName: '', username: '', password: '' });
     setBulkForm({ groupId: groups[0]?.id || '', text: '' });
+  };
+
+  // --- ADMIN ACTIONS ---
+  const openAddAdmin = () => {
+    setEditingItem(null);
+    setAdminForm({ fullName: '', username: '', password: '' });
+    setShowAdminModal(true);
+  };
+
+  const openEditAdmin = (a) => {
+    setEditingItem(a);
+    setAdminForm({ fullName: a.fullName, username: a.username, password: '' });
+    setShowAdminModal(true);
+  };
+
+  const handleAdminSubmit = (e) => {
+    e.preventDefault();
+    setErrorMessage('');
+    setSuccessMessage('');
+
+    const apiCall = editingItem
+      ? axios.put(`/api/admin-users/${editingItem.id}`, adminForm)
+      : axios.post('/api/admin-users', adminForm);
+
+    apiCall
+      .then(() => {
+        setSuccessMessage(editingItem ? "Admin ma'lumotlari yangilandi!" : "Yangi admin muvaffaqiyatli qo'shildi!");
+        loadAdmins();
+        setTimeout(handleCloseModals, 1200);
+      })
+      .catch(err => {
+        console.error(err);
+        setErrorMessage(err.response?.data || "Adminni saqlashda xatolik yuz berdi.");
+      });
+  };
+
+  const handleDeleteAdmin = (id) => {
+    setDeleteConfirm({
+      show: true,
+      id,
+      type: 'admin-user',
+      message: "Ushbu adminni o'chirib tashlamoqchimisiz? Ushbu amal ortga qaytarilmaydi!"
+    });
   };
 
   // --- STUDENT ACTIONS ---
@@ -221,11 +287,16 @@ export default function AdminManagement({ activeSubTab }) {
     if (type === 'student') endpoint = `/api/students/${id}`;
     else if (type === 'group') endpoint = `/api/groups/${id}`;
     else if (type === 'mentor') endpoint = `/api/mentors/${id}`;
+    else if (type === 'admin-user') endpoint = `/api/admin-users/${id}`;
 
     axios.delete(endpoint)
       .then(() => {
         refreshData();
-        loadAllData();
+        if (type === 'admin-user') {
+          loadAdmins();
+        } else {
+          loadAllData();
+        }
         setDeleteConfirm({ show: false, id: null, type: '', message: '' });
       })
       .catch(err => {
@@ -337,6 +408,11 @@ export default function AdminManagement({ activeSubTab }) {
               <Plus size={15} /> KURS QO'SHISH
             </button>
           )}
+          {activeTab === 'admins' && isSuperAdmin && (
+            <button onClick={openAddAdmin} className="flex items-center gap-1.5 px-4 py-2.5 bg-indigo-650 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold shadow shadow-indigo-500/10 cursor-pointer">
+              <Plus size={15} /> ADMIN QO'SHISH
+            </button>
+          )}
         </div>
       </div>
 
@@ -382,6 +458,18 @@ export default function AdminManagement({ activeSubTab }) {
         >
           Kurslar
         </button>
+        {isSuperAdmin && (
+          <button
+            onClick={() => setActiveTab('admins')}
+            className={`px-6 py-3 font-semibold text-sm border-b-2 transition-all cursor-pointer ${
+              activeTab === 'admins' 
+                ? 'border-indigo-500 text-indigo-400' 
+                : 'border-transparent text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            Adminlar
+          </button>
+        )}
       </div>
 
       {/* Tab Panels */}
@@ -580,6 +668,43 @@ export default function AdminManagement({ activeSubTab }) {
                         <td className="py-4 px-6 font-bold text-slate-100">{c.name}</td>
                         <td className="py-4 px-6 text-center font-semibold text-slate-400">
                           {c.createdAt ? new Date(c.createdAt).toLocaleDateString() : "Noma'lum"}
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {/* Panel: Admins */}
+          {activeTab === 'admins' && isSuperAdmin && (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="border-b border-slate-800 bg-slate-950/40 text-[10px] font-bold text-slate-400 tracking-wider uppercase">
+                    <th className="py-4 px-6">TO'LIQ ISM</th>
+                    <th className="py-4 px-6">USERNAME</th>
+                    <th className="py-4 px-6 text-center">HARAKATLAR</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-800/60 text-slate-300 text-sm">
+                  {adminsList.length === 0 ? (
+                    <tr><td colSpan="3" className="py-8 text-center text-slate-500 font-semibold">Adminlar yo'q</td></tr>
+                  ) : (
+                    adminsList.map(a => (
+                      <tr key={a.id} className="hover:bg-slate-850/20 transition-all">
+                        <td className="py-4 px-6 font-bold text-slate-100">{a.fullName}</td>
+                        <td className="py-4 px-6 font-semibold text-slate-400">{a.username}</td>
+                        <td className="py-4 px-6">
+                          <div className="flex items-center justify-center gap-2">
+                            <button onClick={() => openEditAdmin(a)} className="w-8 h-8 rounded-lg bg-slate-800 hover:bg-indigo-650 text-slate-400 hover:text-white flex items-center justify-center cursor-pointer transition-colors border border-slate-700/50">
+                              <Edit3 size={13} />
+                            </button>
+                            <button onClick={() => handleDeleteAdmin(a.id)} className="w-8 h-8 rounded-lg bg-slate-800 hover:bg-rose-600/15 border border-slate-700/50 hover:border-rose-500/25 text-slate-400 hover:text-rose-400 flex items-center justify-center cursor-pointer transition-colors">
+                              <Trash2 size={13} />
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))
@@ -827,6 +952,66 @@ export default function AdminManagement({ activeSubTab }) {
             <div className="pt-4 flex gap-3">
               <button type="button" onClick={handleCloseModals} className="flex-1 py-2.5 bg-slate-800 hover:bg-slate-750 text-slate-300 font-semibold rounded-lg text-xs cursor-pointer border border-slate-700/50">Bekor qilish</button>
               <button type="submit" className="flex-1 py-2.5 bg-indigo-650 hover:bg-indigo-500 text-white font-semibold rounded-lg text-xs cursor-pointer shadow shadow-indigo-500/10">Saqlash</button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* Modal: Admin CRUD */}
+      {showAdminModal && (
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
+          <form onSubmit={handleAdminSubmit} className="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <h3 className="font-extrabold text-white text-base">
+                {editingItem ? "Admin Ma'lumotlarini Tahrirlash" : "Yangi Admin Yaratish"}
+              </h3>
+              <button type="button" onClick={handleCloseModals} className="text-slate-400 hover:text-white cursor-pointer"><X size={18} /></button>
+            </div>
+
+            {errorMessage && <div className="p-3 bg-rose-500/10 border border-rose-500/20 rounded-lg text-rose-400 text-xs font-semibold">{errorMessage}</div>}
+            {successMessage && <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-lg text-emerald-400 text-xs font-semibold">{successMessage}</div>}
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-400 mb-1">ISM FAMILIYA (F.I.O)</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Masalan: Sardorbek Aliyev"
+                  value={adminForm.fullName}
+                  onChange={(e) => setAdminForm({ ...adminForm, fullName: e.target.value })}
+                  className="w-full h-10 px-3 bg-slate-850 border border-slate-800 rounded-lg text-slate-200 text-sm focus:outline-none focus:border-indigo-500"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-400 mb-1">FOYDALANUVCHI NOMI (USERNAME)</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Masalan: sardor_admin"
+                  value={adminForm.username}
+                  onChange={(e) => setAdminForm({ ...adminForm, username: e.target.value })}
+                  className="w-full h-10 px-3 bg-slate-850 border border-slate-800 rounded-lg text-slate-200 text-sm focus:outline-none focus:border-indigo-500 font-mono"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-400 mb-1">PAROL</label>
+                <input
+                  type="password"
+                  required={!editingItem}
+                  placeholder={editingItem ? "o'zgarishsiz qoldirish" : "Parolni yozing..."}
+                  value={adminForm.password}
+                  onChange={(e) => setAdminForm({ ...adminForm, password: e.target.value })}
+                  className="w-full h-10 px-3 bg-slate-850 border border-slate-800 rounded-lg text-slate-200 text-sm focus:outline-none focus:border-indigo-500"
+                />
+              </div>
+            </div>
+
+            <div className="pt-4 flex gap-3">
+              <button type="button" onClick={handleCloseModals} className="flex-1 py-2.5 bg-slate-800 hover:bg-slate-750 text-slate-300 font-semibold rounded-lg text-xs cursor-pointer border border-slate-700/50">Bekor qilish</button>
+              <button type="submit" className="flex-1 py-2.5 bg-indigo-650 hover:bg-indigo-500 text-white font-semibold rounded-lg text-xs cursor-pointer shadow shadow-indigo-500/10">
+                {editingItem ? "Saqlash" : "Admin Yaratish"}
+              </button>
             </div>
           </form>
         </div>

@@ -75,6 +75,7 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST, "/api/mentors").hasRole("SUPER_ADMIN")
                 .requestMatchers(HttpMethod.PUT, "/api/mentors/**").hasRole("SUPER_ADMIN")
                 .requestMatchers(HttpMethod.POST, "/api/courses").hasRole("SUPER_ADMIN")
+                .requestMatchers("/api/admin-users/**").hasRole("SUPER_ADMIN")
                 // Block students from admin management pages
                 .requestMatchers("/api/admin/**").hasAnyRole("SUPER_ADMIN", "ADMIN", "MENTOR")
                 // All others require authentication
