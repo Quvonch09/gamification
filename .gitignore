@@ -31,3 +31,8 @@ desktop.ini
 
 # Temp python script scripts
 *.py
+
+# Environment/Secret files
+.env
+.env.*
+*.local

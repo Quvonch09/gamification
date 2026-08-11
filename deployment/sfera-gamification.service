@@ -1,0 +1,34 @@
+[Unit]
+Description=Sfera Gamification Spring Boot Backend Service
+After=network.target postgresql.service
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/sfera
+ExecStart=/usr/bin/java -Xmx256m -Xms128m -jar /opt/sfera/app.jar
+Restart=on-failure
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=sfera-gamification
+
+# Environment configuration
+Environment=SPRING_PROFILES_ACTIVE=prod
+Environment=PORT=8080
+
+# Database Configuration (uncomment and customize on target host)
+# Environment=SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/sfera_gamification
+# Environment=SPRING_DATASOURCE_USERNAME=postgres
+# Environment=SPRING_DATASOURCE_PASSWORD=your_password_here
+
+# JWT Security Configurations
+# Environment=JWT_SECRET=your_jwt_secret_key_here
+
+# MegaLLM AI Assistant Credentials
+# Environment=MEGALLM_API_KEY=your_megallm_api_key_here
+# Environment=MEGALLM_MODEL=llama3.3-70b-instruct
+# Environment=MEGALLM_API_URL=https://ai.megallm.io/v1/chat/completions
+
+[Install]
+WantedBy=multi-user.target

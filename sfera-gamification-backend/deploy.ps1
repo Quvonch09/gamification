@@ -4,12 +4,21 @@
 # Server: 89.116.30.180  |  User: root
 # =======================================================
 
-$SERVER    = "89.116.30.180"
-$USER      = "root"
+param (
+    [string]$Server = $env:DEPLOY_SERVER,
+    [string]$User = $env:DEPLOY_USER,
+    [string]$ServiceName = "sfera-gamification",
+    [string]$DeployDir = "/opt/sfera"
+)
+
+# Set defaults if not provided via parameter or environment variables
+if ([string]::IsNullOrEmpty($Server)) { $Server = "89.116.30.180" }
+if ([string]::IsNullOrEmpty($User)) { $User = "root" }
+
 $JAR_LOCAL = "target\sfera-gamification-backend-0.0.1-SNAPSHOT.jar"
-$DEPLOY_DIR = "/opt/sfera"
-$JAR_REMOTE = "$DEPLOY_DIR/app.jar"
-$SERVICE_NAME = "sfera-gamification"
+$JAR_REMOTE = "$DeployDir/app.jar"
+$SERVICE_NAME = $ServiceName
+$DEPLOY_DIR = $DeployDir
 
 Write-Host ""
 Write-Host "=================================================" -ForegroundColor Cyan

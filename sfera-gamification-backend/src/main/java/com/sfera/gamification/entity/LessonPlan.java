@@ -19,11 +19,17 @@ public class LessonPlan {
     @JoinColumn(name = "course_id", nullable = false)
     private Course course;
 
+    @Column(name = "module_title")
+    private String moduleTitle;  // "1-module", "2-module" va h.k.
+
     @Column(nullable = false)
     private String title;
 
     @Column(columnDefinition = "TEXT", nullable = false)
     private String content;
+
+    @Column(name = "homework_task", columnDefinition = "TEXT")
+    private String homeworkTask;  // Uyga vazifa
 
     @Column(name = "sequence_order", nullable = false)
     private Integer sequenceOrder;

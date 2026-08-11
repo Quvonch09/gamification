@@ -105,6 +105,7 @@ public class AiChatService {
 
             Map<String, Object> requestBody = new HashMap<>();
             requestBody.put("model", modelName);
+            requestBody.put("max_tokens", 2048); // Explicitly set max output tokens to prevent context window overflow defaults
 
             List<Map<String, String>> messages = new ArrayList<>();
             messages.add(Map.of("role", "system", "content", systemPrompt));

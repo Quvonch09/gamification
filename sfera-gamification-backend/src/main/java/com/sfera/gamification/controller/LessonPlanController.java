@@ -10,7 +10,9 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/lesson-plans")
@@ -38,8 +40,10 @@ public class LessonPlanController {
 
         LessonPlan plan = LessonPlan.builder()
                 .course(course)
+                .moduleTitle(dto.getModuleTitle())
                 .title(dto.getTitle())
                 .content(dto.getContent())
+                .homeworkTask(dto.getHomeworkTask())
                 .sequenceOrder(dto.getSequenceOrder())
                 .createdAt(LocalDateTime.now())
                 .build();
@@ -59,8 +63,10 @@ public class LessonPlanController {
             plan.setCourse(course);
         }
 
+        plan.setModuleTitle(dto.getModuleTitle());
         plan.setTitle(dto.getTitle());
         plan.setContent(dto.getContent());
+        plan.setHomeworkTask(dto.getHomeworkTask());
         plan.setSequenceOrder(dto.getSequenceOrder());
 
         return ResponseEntity.ok(lessonPlanRepository.save(plan));
@@ -75,19 +81,66 @@ public class LessonPlanController {
         return ResponseEntity.ok().build();
     }
 
+    /**
+     * Bulk upload: Notion Markdown faylidan parse qilingan JSON array'ni qabul qiladi.
+     * replace=true bo'lsa, kurs uchun barcha mavjud rejalari o'chirib, yangilari saqlanadi.
+     */
+    @PostMapping("/bulk-upload")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
+    public ResponseEntity<?> bulkUpload(
+            @RequestParam Long courseId,
+            @RequestParam(defaultValue = "false") boolean replace,
+            @RequestBody List<LessonPlanDto> items) {
+
+        Course course = courseRepository.findById(courseId)
+                .orElseThrow(() -> new RuntimeException("Course not found"));
+
+        if (replace) {
+            List<LessonPlan> existing = lessonPlanRepository.findByCourseIdOrderBySequenceOrderAsc(courseId);
+            lessonPlanRepository.deleteAll(existing);
+        }
+
+        List<LessonPlan> saved = new ArrayList<>();
+        for (int i = 0; i < items.size(); i++) {
+            LessonPlanDto dto = items.get(i);
+            LessonPlan plan = LessonPlan.builder()
+                    .course(course)
+                    .moduleTitle(dto.getModuleTitle())
+                    .title(dto.getTitle() != null ? dto.getTitle() : "Dars " + (i + 1))
+                    .content(dto.getContent() != null ? dto.getContent() : "")
+                    .homeworkTask(dto.getHomeworkTask())
+                    .sequenceOrder(dto.getSequenceOrder() != null ? dto.getSequenceOrder() : (i + 1))
+                    .createdAt(LocalDateTime.now())
+                    .build();
+            saved.add(plan);
+        }
+
+        List<LessonPlan> result = lessonPlanRepository.saveAll(saved);
+        return ResponseEntity.ok(Map.of(
+                "saved", result.size(),
+                "message", result.size() + " ta dars rejasi muvaffaqiyatli yuklandi"
+        ));
+    }
+
     // Helper DTO
     public static class LessonPlanDto {
         private Long courseId;
+        private String moduleTitle;
         private String title;
         private String content;
+        private String homeworkTask;
         private Integer sequenceOrder;
 
         public Long getCourseId() { return courseId; }
         public void setCourseId(Long courseId) { this.courseId = courseId; }
+        public String getModuleTitle() { return moduleTitle; }
+        public void setModuleTitle(String moduleTitle) { this.moduleTitle = moduleTitle; }
         public String getTitle() { return title; }
         public void setTitle(String title) { this.title = title; }
         public String getContent() { return content; }
         public void setContent(String content) { this.content = content; }
+        public String getHomeworkTask() { return homeworkTask; }
+        public void setHomeworkTask(String homeworkTask) { this.homeworkTask = homeworkTask; }
         public Integer getSequenceOrder() { return sequenceOrder; }
         public void setSequenceOrder(Integer sequenceOrder) { this.sequenceOrder = sequenceOrder; }
     }

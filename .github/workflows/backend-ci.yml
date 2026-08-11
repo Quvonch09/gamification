@@ -1,0 +1,63 @@
+name: Backend CI/CD
+
+on:
+  push:
+    branches: [ main, master ]
+    paths:
+      - 'sfera-gamification-backend/**'
+      - '.github/workflows/backend-ci.yml'
+  pull_request:
+    branches: [ main, master ]
+    paths:
+      - 'sfera-gamification-backend/**'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    - name: Set up JDK 17
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+        cache: 'maven'
+
+    - name: Build with Maven
+      working-directory: sfera-gamification-backend
+      run: mvn clean package -DskipTests
+
+    - name: Upload Build Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: sfera-backend-jar
+        path: sfera-gamification-backend/target/sfera-gamification-backend-0.0.1-SNAPSHOT.jar
+        retention-days: 7
+
+    # Optional: Deploy to Server via SSH
+    # Uncomment and configure the secrets in your GitHub repository settings to enable auto-deployment
+    # - name: Deploy to Target Server
+    #   if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+    #   uses: appleboy/scp-action@master
+    #   with:
+    #     host: ${{ secrets.DEPLOY_HOST }}
+    #     username: ${{ secrets.DEPLOY_USER }}
+    #     key: ${{ secrets.SSH_PRIVATE_KEY }}
+    #     source: "sfera-gamification-backend/target/sfera-gamification-backend-0.0.1-SNAPSHOT.jar"
+    #     target: "/opt/sfera/tmp"
+    #     strip_components: 2
+
+    # - name: Restart Systemd Service
+    #   if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+    #   uses: appleboy/ssh-action@master
+    #   with:
+    #     host: ${{ secrets.DEPLOY_HOST }}
+    #     username: ${{ secrets.DEPLOY_USER }}
+    #     key: ${{ secrets.SSH_PRIVATE_KEY }}
+    #     script: |
+    #       mv /opt/sfera/tmp/sfera-gamification-backend-0.0.1-SNAPSHOT.jar /opt/sfera/app.jar
+    #       systemctl restart sfera-gamification
+    #       systemctl status sfera-gamification
