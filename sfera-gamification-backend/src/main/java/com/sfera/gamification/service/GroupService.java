@@ -83,10 +83,18 @@ public class GroupService {
         return courseRepository.findAll();
     }
 
+    public Course getCourseById(Long id) {
+        return courseRepository.findById(id).orElse(null);
+    }
+
     public Course saveCourse(Course course) {
         if (course.getCreatedAt() == null) {
             course.setCreatedAt(LocalDateTime.now());
         }
         return courseRepository.save(course);
+    }
+
+    public void deleteCourse(Long id) {
+        courseRepository.deleteById(id);
     }
 }

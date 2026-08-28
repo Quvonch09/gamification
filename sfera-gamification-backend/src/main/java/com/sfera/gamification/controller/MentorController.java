@@ -46,6 +46,7 @@ public class MentorController {
             map.put("id", m.getId());
             map.put("fullName", m.getUser().getFullName());
             map.put("username", m.getUser().getUsername());
+            map.put("color", m.getColor() != null ? m.getColor() : "#3b82f6");
             
             // Get groups
             List<Group> groups = groupRepository.findByMentorId(m.getId());
@@ -61,6 +62,7 @@ public class MentorController {
         String fullName = request.get("fullName");
         String username = request.get("username");
         String password = request.get("password");
+        String color = request.get("color");
 
         if (fullName == null || username == null || password == null) {
             return ResponseEntity.badRequest().body("Ism, username va parol majburiy");
@@ -81,6 +83,7 @@ public class MentorController {
 
         Mentor mentor = Mentor.builder()
                 .user(user)
+                .color(color != null && !color.trim().isEmpty() ? color.trim() : "#3b82f6")
                 .createdAt(LocalDateTime.now())
                 .build();
         mentor = mentorRepository.save(mentor);
@@ -153,6 +156,7 @@ public class MentorController {
         String fullName = request.get("fullName");
         String username = request.get("username");
         String password = request.get("password");
+        String color = request.get("color");
 
         User user = mentor.getUser();
         if (user != null) {
@@ -171,6 +175,26 @@ public class MentorController {
             userRepository.save(user);
         }
 
+        if (color != null && !color.trim().isEmpty()) {
+            mentor.setColor(color.trim());
+            mentorRepository.save(mentor);
+        }
+
+        return ResponseEntity.ok(mentor);
+    }
+
+    @PutMapping("/{id}/color")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
+    public ResponseEntity<?> updateMentorColor(@PathVariable Long id, @RequestBody Map<String, String> request) {
+        Mentor mentor = mentorRepository.findById(id).orElse(null);
+        if (mentor == null) {
+            return ResponseEntity.notFound().build();
+        }
+        String color = request.get("color");
+        if (color != null && !color.trim().isEmpty()) {
+            mentor.setColor(color.trim());
+            mentor = mentorRepository.save(mentor);
+        }
         return ResponseEntity.ok(mentor);
     }
 

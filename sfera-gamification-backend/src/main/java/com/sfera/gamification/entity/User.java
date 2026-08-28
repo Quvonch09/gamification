@@ -25,11 +25,15 @@ public class User {
     private String password;
 
     @Column(nullable = false)
-    private String role; // ADMIN, MENTOR, STUDENT
+    private String role; // SUPER_ADMIN, BRANCH_ADMIN, OPERATOR, MENTOR, CASHIER, ACCOUNTANT, STUDENT, PARENT
 
     @OneToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "student_id")
     private Student student;
+
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "branch_id")
+    private Branch branch;
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;

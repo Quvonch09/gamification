@@ -1,0 +1,1 @@
+ALTER TABLE students ADD COLUMN IF NOT EXISTS custom_price NUMERIC(15, 2);

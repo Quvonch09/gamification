@@ -22,21 +22,26 @@ public class AdminUserController {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
+    private static final Set<String> ALLOWED_ROLES = Set.of(
+            "SUPER_ADMIN", "ADMIN", "BRANCH_ADMIN", "OPERATOR", "CASHIER", "ACCOUNTANT", "MENTOR"
+    );
+
     @GetMapping
     public ResponseEntity<?> getAllAdmins() {
         List<User> allUsers = userRepository.findAll();
-        List<Map<String, Object>> admins = new ArrayList<>();
+        List<Map<String, Object>> staffUsers = new ArrayList<>();
         for (User u : allUsers) {
-            if ("ADMIN".equals(u.getRole())) {
+            if (u.getRole() != null && !u.getRole().equals("STUDENT")) {
                 Map<String, Object> map = new HashMap<>();
                 map.put("id", u.getId());
                 map.put("fullName", u.getFullName());
                 map.put("username", u.getUsername());
                 map.put("role", u.getRole());
-                admins.add(map);
+                map.put("createdAt", u.getCreatedAt() != null ? u.getCreatedAt().toString() : null);
+                staffUsers.add(map);
             }
         }
-        return ResponseEntity.ok(admins);
+        return ResponseEntity.ok(staffUsers);
     }
 
     @PostMapping
@@ -44,9 +49,20 @@ public class AdminUserController {
         String fullName = request.get("fullName");
         String username = request.get("username");
         String password = request.get("password");
+        String role = request.get("role");
 
         if (fullName == null || username == null || password == null) {
             return ResponseEntity.badRequest().body("Ism, username va parol majburiy");
+        }
+
+        if (role == null || role.trim().isEmpty()) {
+            role = "ADMIN";
+        } else {
+            role = role.trim().toUpperCase();
+        }
+
+        if (!ALLOWED_ROLES.contains(role)) {
+            return ResponseEntity.badRequest().body("Noto'g'ri rol kiritildi: " + role);
         }
 
         if (userRepository.findByUsername(username).isPresent()) {
@@ -57,7 +73,7 @@ public class AdminUserController {
                 .fullName(fullName)
                 .username(username)
                 .password(passwordEncoder.encode(password))
-                .role("ADMIN")
+                .role(role)
                 .createdAt(LocalDateTime.now())
                 .build();
         user = userRepository.save(user);
@@ -74,7 +90,7 @@ public class AdminUserController {
     @PutMapping("/{id}")
     public ResponseEntity<?> updateAdmin(@PathVariable Long id, @RequestBody Map<String, String> request) {
         Optional<User> optionalUser = userRepository.findById(id);
-        if (optionalUser.isEmpty() || !"ADMIN".equals(optionalUser.get().getRole())) {
+        if (optionalUser.isEmpty()) {
             return ResponseEntity.notFound().build();
         }
 
@@ -82,9 +98,17 @@ public class AdminUserController {
         String fullName = request.get("fullName");
         String username = request.get("username");
         String password = request.get("password");
+        String role = request.get("role");
 
-        if (fullName != null) user.setFullName(fullName);
-        if (username != null) {
+        if (fullName != null && !fullName.trim().isEmpty()) user.setFullName(fullName);
+        if (role != null && !role.trim().isEmpty()) {
+            String cleanRole = role.trim().toUpperCase();
+            if (ALLOWED_ROLES.contains(cleanRole)) {
+                user.setRole(cleanRole);
+            }
+        }
+
+        if (username != null && !username.trim().isEmpty()) {
             Optional<User> existing = userRepository.findByUsername(username);
             if (existing.isPresent() && !existing.get().getId().equals(id)) {
                 return ResponseEntity.badRequest().body("Ushbu username band");
@@ -109,10 +133,14 @@ public class AdminUserController {
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteAdmin(@PathVariable Long id) {
         Optional<User> optionalUser = userRepository.findById(id);
-        if (optionalUser.isEmpty() || !"ADMIN".equals(optionalUser.get().getRole())) {
+        if (optionalUser.isEmpty()) {
             return ResponseEntity.notFound().build();
         }
-        userRepository.delete(optionalUser.get());
+        User user = optionalUser.get();
+        if ("admin".equalsIgnoreCase(user.getUsername())) {
+            return ResponseEntity.badRequest().body("Asosiy tizim administratorini o'chirish mumkin emas");
+        }
+        userRepository.delete(user);
         return ResponseEntity.ok().build();
     }
 }

@@ -10,10 +10,10 @@ import java.util.Date;
 @Component
 public class JwtUtils {
 
-    @Value("${jwt.secret}")
+    @Value("${jwt.secret:9a611c03-51bf-4b0e-8c5e-8e4ccfb72b12-super-secret-key-that-is-at-least-256-bits-long-for-hmac-sha-256-sfera-gamification-system}")
     private String jwtSecret;
 
-    @Value("${jwt.expiration}")
+    @Value("${jwt.expiration:86400000}")
     private int jwtExpirationMs;
 
     private Key key() {

@@ -20,6 +20,9 @@ public class StudentService {
     @Autowired
     private GroupStudentRepository groupStudentRepository;
 
+    @Autowired
+    private UserRepository userRepository;
+
     public List<Student> getAllStudents() {
         return studentRepository.findAll();
     }
@@ -46,11 +49,28 @@ public class StudentService {
         studentRepository.findById(id).ifPresent(s -> {
             s.setStatus("ARCHIVED");
             studentRepository.save(s);
+
+            // Archive all point transactions so they don't count anywhere
+            List<PointTransaction> transactions = pointTransactionRepository.findByStudentId(id);
+            for (PointTransaction pt : transactions) {
+                pt.setStatus("ARCHIVED");
+                pointTransactionRepository.save(pt);
+            }
+
+            // Archive active group memberships
+            List<GroupStudent> gsList = groupStudentRepository.findByStudentId(id);
+            for (GroupStudent gs : gsList) {
+                gs.setStatus("ARCHIVED");
+                groupStudentRepository.save(gs);
+            }
+
+            // Remove associated user login account
+            userRepository.findByStudentId(id).ifPresent(userRepository::delete);
         });
     }
 
     public void deleteStudent(Long id) {
-        studentRepository.deleteById(id);
+        archiveStudent(id);
     }
 
     public Map<String, Object> getStudentProfile(Long studentId) {

@@ -298,7 +298,7 @@ export default function LessonPlans() {
   };
 
   return (
-    <div className="p-6 space-y-6 overflow-y-auto max-h-[calc(100vh-4rem)]">
+    <div className="p-6 space-y-6 overflow-y-auto overflow-x-auto min-h-full custom-scrollbar">
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>

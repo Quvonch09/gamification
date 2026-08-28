@@ -19,6 +19,9 @@ public class Mentor {
     @JoinColumn(name = "user_id", referencedColumnName = "id", nullable = false)
     private User user;
 
+    @Column(name = "color")
+    private String color;
+
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 }

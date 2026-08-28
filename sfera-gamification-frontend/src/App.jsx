@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { DataProvider } from './context/DataContext';
 import { ThemeProvider, useTheme } from './context/ThemeContext';
@@ -12,6 +12,13 @@ import PointHistory from './pages/PointHistory';
 import Attendance from './pages/Attendance';
 import LessonPlans from './pages/LessonPlans';
 import SferaAi from './pages/SferaAi';
+import Leads from './pages/Leads';
+import Finance from './pages/Finance';
+import AuditLogs from './pages/AuditLogs';
+import Schedule from './pages/Schedule';
+import Reports from './pages/Reports';
+import CashierDesk from './pages/CashierDesk';
+import Expenses from './pages/Expenses';
 import { LogIn, ShieldAlert, Award, Star, X, AlertTriangle, Search, Sun, Moon } from 'lucide-react';
 import axios from 'axios';
 import CustomSelect from './components/CustomSelect';
@@ -22,6 +29,17 @@ function AppContent() {
   const [currentPage, setCurrentPage] = useState('dashboard');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [selectedStudentId, setSelectedStudentId] = useState(null);
+
+  // Automatically force Operator to Leads and Cashier to CashierDesk
+  useEffect(() => {
+    if (user?.role === 'OPERATOR') {
+      setCurrentPage('leads');
+    } else if (user?.role === 'CASHIER') {
+      setCurrentPage('cashier');
+    } else if (user?.role === 'ACCOUNTANT') {
+      setCurrentPage('expenses');
+    }
+  }, [user]);
 
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [showQuickAwardModal, setShowQuickAwardModal] = useState(false);
@@ -263,9 +281,16 @@ function AppContent() {
 
   // 3. Authenticated Layout Panel
   const renderPage = () => {
+    if (user?.role === 'OPERATOR') {
+      return <Leads refreshTrigger={refreshTrigger} setCurrentPage={setCurrentPage} setSelectedStudentId={setSelectedStudentId} />;
+    }
     switch (currentPage) {
       case 'dashboard':
         return <Dashboard refreshTrigger={refreshTrigger} />;
+      case 'schedule':
+        return <Schedule refreshTrigger={refreshTrigger} setCurrentPage={setCurrentPage} />;
+      case 'leads':
+        return <Leads refreshTrigger={refreshTrigger} setCurrentPage={setCurrentPage} setSelectedStudentId={setSelectedStudentId} />;
       case 'journal':
         return <Journal refreshTrigger={refreshTrigger} />;
       case 'davomat':
@@ -276,6 +301,20 @@ function AppContent() {
         return <AdminManagement key="students" activeSubTab="students" refreshTrigger={refreshTrigger} />;
       case 'groups':
         return <AdminManagement key="groups" activeSubTab="groups" refreshTrigger={refreshTrigger} />;
+      case 'courses':
+        return <AdminManagement key="courses" activeSubTab="courses" refreshTrigger={refreshTrigger} />;
+      case 'rooms':
+        return <AdminManagement key="rooms" activeSubTab="rooms" refreshTrigger={refreshTrigger} />;
+      case 'cashier':
+        return <CashierDesk refreshTrigger={refreshTrigger} />;
+      case 'expenses':
+        return <Expenses refreshTrigger={refreshTrigger} />;
+      case 'finance':
+        return <Finance refreshTrigger={refreshTrigger} />;
+      case 'reports':
+        return <Reports refreshTrigger={refreshTrigger} />;
+      case 'audit-logs':
+        return <AuditLogs refreshTrigger={refreshTrigger} />;
       case 'mentors':
         return <AdminManagement key="mentors" activeSubTab="mentors" refreshTrigger={refreshTrigger} />;
       case 'admins':
@@ -344,7 +383,7 @@ function AppContent() {
         </header>
 
         {/* Dynamic Inner Page Content */}
-        <main className="flex-1 overflow-hidden bg-slate-950">
+        <main className="flex-1 overflow-y-auto overflow-x-auto bg-slate-950 custom-scrollbar">
           {renderPage()}
         </main>
       </div>

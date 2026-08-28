@@ -7,19 +7,31 @@ import com.sfera.gamification.entity.User;
 import com.sfera.gamification.entity.PointRule;
 import com.sfera.gamification.entity.PointTransaction;
 import com.sfera.gamification.entity.Mentor;
+import com.sfera.gamification.entity.Enrollment;
+import com.sfera.gamification.entity.Invoice;
+import com.sfera.gamification.entity.Payment;
+import com.sfera.gamification.entity.LeadEvent;
 import com.sfera.gamification.repository.PointTransactionRepository;
 import com.sfera.gamification.repository.GroupStudentRepository;
 import com.sfera.gamification.repository.GroupRepository;
 import com.sfera.gamification.repository.UserRepository;
 import com.sfera.gamification.repository.PointRuleRepository;
 import com.sfera.gamification.repository.MentorRepository;
+import com.sfera.gamification.repository.EnrollmentRepository;
+import com.sfera.gamification.repository.InvoiceRepository;
+import com.sfera.gamification.repository.PaymentRepository;
+import com.sfera.gamification.repository.LeadRepository;
+import com.sfera.gamification.repository.LeadEventRepository;
 import com.sfera.gamification.service.StudentService;
 import com.sfera.gamification.service.GroupService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import java.math.BigDecimal;
 import java.security.Principal;
+import java.time.LocalDateTime;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -54,6 +66,21 @@ public class StudentController {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
+    @Autowired
+    private EnrollmentRepository enrollmentRepository;
+
+    @Autowired
+    private InvoiceRepository invoiceRepository;
+
+    @Autowired
+    private PaymentRepository paymentRepository;
+
+    @Autowired
+    private LeadRepository leadRepository;
+
+    @Autowired
+    private LeadEventRepository leadEventRepository;
+
     @GetMapping
     public ResponseEntity<?> getAllStudents(Principal principal) {
         if (principal == null) {
@@ -65,9 +92,7 @@ public class StudentController {
         }
 
         List<Student> students;
-        if ("SUPER_ADMIN".equals(user.getRole()) || "ADMIN".equals(user.getRole())) {
-            students = studentService.getActiveStudents();
-        } else if ("MENTOR".equals(user.getRole())) {
+        if ("MENTOR".equals(user.getRole())) {
             Mentor mentor = mentorRepository.findByUserId(user.getId()).orElse(null);
             if (mentor == null) {
                 students = new ArrayList<>();
@@ -75,7 +100,8 @@ public class StudentController {
                 students = studentService.getStudentsByMentor(mentor.getId());
             }
         } else {
-            students = new ArrayList<>();
+            // Admins, Super Admin, Operators, Cashiers, Accountants
+            students = studentService.getActiveStudents();
         }
 
         List<Map<String, Object>> response = new ArrayList<>();
@@ -86,6 +112,13 @@ public class StudentController {
             map.put("firstName", s.getFirstName());
             map.put("lastName", s.getLastName());
             map.put("fullName", s.getFirstName() + " " + s.getLastName());
+            map.put("phone", s.getPhone());
+            map.put("telegram", s.getTelegram());
+            map.put("parentName", s.getParentName());
+            map.put("parentPhone", s.getParentPhone());
+            map.put("birthDate", s.getBirthDate());
+            map.put("address", s.getAddress());
+            map.put("gender", s.getGender());
             map.put("status", s.getStatus());
             map.put("createdAt", s.getCreatedAt());
             
@@ -102,13 +135,59 @@ public class StudentController {
 
             // Get group details
             List<GroupStudent> list = groupStudentRepository.findByStudentIdAndStatus(s.getId(), "ACTIVE");
+            BigDecimal studentCoursePrice = BigDecimal.ZERO;
+            if (s.getCustomPrice() != null) {
+                studentCoursePrice = s.getCustomPrice();
+            } else if (!list.isEmpty()) {
+                Group grp = list.get(0).getGroup();
+                if (grp.getCourse() != null && grp.getCourse().getPrice() != null) {
+                    studentCoursePrice = grp.getCourse().getPrice();
+                }
+            }
+
             if (!list.isEmpty()) {
-                map.put("groupId", list.get(0).getGroup().getId());
-                map.put("groupName", list.get(0).getGroup().getName());
+                Group grp = list.get(0).getGroup();
+                map.put("groupId", grp.getId());
+                map.put("groupName", grp.getName());
             } else {
                 map.put("groupId", null);
                 map.put("groupName", "Guruhsiz");
             }
+            map.put("customPrice", s.getCustomPrice());
+            map.put("coursePrice", studentCoursePrice);
+
+            // Payments & Debt calculation
+            List<Payment> payments = paymentRepository.findByInvoiceEnrollmentStudentId(s.getId());
+            BigDecimal totalPaid = BigDecimal.ZERO;
+            for (Payment p : payments) {
+                totalPaid = totalPaid.add(p.getAmount());
+            }
+            map.put("totalPaid", totalPaid);
+
+            List<Invoice> invoices = invoiceRepository.findByEnrollmentStudentId(s.getId());
+            BigDecimal totalInvoiced = BigDecimal.ZERO;
+            for (Invoice inv : invoices) {
+                totalInvoiced = totalInvoiced.add(inv.getAmount());
+            }
+
+            BigDecimal expectedFee = totalInvoiced.compareTo(BigDecimal.ZERO) > 0 ? totalInvoiced : studentCoursePrice;
+            BigDecimal balanceDue = expectedFee.subtract(totalPaid);
+            if (balanceDue.compareTo(BigDecimal.ZERO) < 0) balanceDue = BigDecimal.ZERO;
+
+            map.put("balanceDue", balanceDue);
+
+            String paymentStatus;
+            if (studentCoursePrice.compareTo(BigDecimal.ZERO) == 0 && totalInvoiced.compareTo(BigDecimal.ZERO) == 0) {
+                paymentStatus = "NO_FEE";
+            } else if (balanceDue.compareTo(BigDecimal.ZERO) == 0 && totalPaid.compareTo(BigDecimal.ZERO) > 0) {
+                paymentStatus = "PAID";
+            } else if (totalPaid.compareTo(BigDecimal.ZERO) > 0) {
+                paymentStatus = "PARTIALLY_PAID";
+            } else {
+                paymentStatus = "DEBTOR";
+            }
+            map.put("paymentStatus", paymentStatus);
+
             response.add(map);
         }
         return ResponseEntity.ok(response);
@@ -129,46 +208,50 @@ public class StudentController {
             return ResponseEntity.status(404).body("User not found");
         }
 
-        List<Object[]> data;
+        List<Student> activeStudents = studentService.getActiveStudents();
+
         if ("MENTOR".equals(user.getRole())) {
             Mentor mentor = mentorRepository.findByUserId(user.getId()).orElse(null);
             if (mentor == null) {
-                data = new ArrayList<>();
+                activeStudents = new ArrayList<>();
             } else {
-                if (groupId != null) {
-                    Group group = groupService.getGroupById(groupId);
-                    if (group == null || group.getMentor() == null || !group.getMentor().getId().equals(mentor.getId())) {
-                        return ResponseEntity.status(403).body("Access Denied - Not your group");
-                    }
-                    data = pointTransactionRepository.findLeaderboardByGroup(groupId);
-                } else {
-                    data = pointTransactionRepository.findLeaderboardByMentor(mentor.getId());
-                }
+                Long targetMentorId = mentor.getId();
+                activeStudents = activeStudents.stream()
+                    .filter(s -> {
+                        List<GroupStudent> gsList = groupStudentRepository.findByStudentIdAndStatus(s.getId(), "ACTIVE");
+                        return gsList.stream().anyMatch(gs -> {
+                            if (groupId != null && !gs.getGroup().getId().equals(groupId)) return false;
+                            return gs.getGroup().getMentor() != null && gs.getGroup().getMentor().getId().equals(targetMentorId);
+                        });
+                    })
+                    .collect(java.util.stream.Collectors.toList());
             }
         } else {
             if (groupId != null) {
-                data = pointTransactionRepository.findLeaderboardByGroup(groupId);
+                activeStudents = activeStudents.stream()
+                    .filter(s -> groupStudentRepository.findByStudentIdAndStatus(s.getId(), "ACTIVE").stream().anyMatch(gs -> gs.getGroup().getId().equals(groupId)))
+                    .collect(java.util.stream.Collectors.toList());
             } else if (mentorId != null) {
-                data = pointTransactionRepository.findLeaderboardByMentor(mentorId);
+                activeStudents = activeStudents.stream()
+                    .filter(s -> groupStudentRepository.findByStudentIdAndStatus(s.getId(), "ACTIVE").stream().anyMatch(gs -> gs.getGroup().getMentor() != null && gs.getGroup().getMentor().getId().equals(mentorId)))
+                    .collect(java.util.stream.Collectors.toList());
             } else if (courseId != null) {
-                data = pointTransactionRepository.findLeaderboardByCourse(courseId);
-            } else {
-                data = pointTransactionRepository.findLeaderboard();
+                activeStudents = activeStudents.stream()
+                    .filter(s -> groupStudentRepository.findByStudentIdAndStatus(s.getId(), "ACTIVE").stream().anyMatch(gs -> gs.getGroup().getCourse() != null && gs.getGroup().getCourse().getId().equals(courseId)))
+                    .collect(java.util.stream.Collectors.toList());
             }
         }
 
         List<Map<String, Object>> result = new ArrayList<>();
-        for (int i = 0; i < data.size(); i++) {
-            Student s = (Student) data.get(i)[0];
-            Long xp = (Long) data.get(i)[1];
+        for (Student s : activeStudents) {
+            Long xp = pointTransactionRepository.getStudentXp(s.getId());
             
             Map<String, Object> map = new HashMap<>();
-            map.put("rank", i + 1);
             map.put("id", s.getId());
             map.put("firstName", s.getFirstName());
             map.put("lastName", s.getLastName());
             map.put("fullName", s.getFirstName() + " " + s.getLastName());
-            map.put("xp", xp);
+            map.put("xp", xp != null ? xp : 0L);
 
             // Group name
             List<GroupStudent> gsList = groupStudentRepository.findByStudentIdAndStatus(s.getId(), "ACTIVE");
@@ -180,6 +263,21 @@ public class StudentController {
 
             result.add(map);
         }
+
+        // Sort descending by XP, then by fullName
+        result.sort((a, b) -> {
+            Long xpA = (Long) a.get("xp");
+            Long xpB = (Long) b.get("xp");
+            int cmp = xpB.compareTo(xpA);
+            if (cmp != 0) return cmp;
+            return ((String) a.get("fullName")).compareTo((String) b.get("fullName"));
+        });
+
+        // Set 1-indexed ranks
+        for (int i = 0; i < result.size(); i++) {
+            result.get(i).put("rank", i + 1);
+        }
+
         return ResponseEntity.ok(result);
     }
 
@@ -194,15 +292,46 @@ public class StudentController {
         String username = request.get("username");
         String password = request.get("password");
 
+        String phone = request.get("phone");
+        String telegram = request.get("telegram");
+        String parentName = request.get("parentName");
+        String parentPhone = request.get("parentPhone");
+        String birthDateStr = request.get("birthDate");
+        String address = request.get("address");
+        String gender = request.get("gender");
+
         if (firstName == null || lastName == null) {
             return ResponseEntity.badRequest().body("Ism va Familiya majburiy");
+        }
+
+        LocalDate birthDate = null;
+        if (birthDateStr != null && !birthDateStr.trim().isEmpty()) {
+            try {
+                birthDate = LocalDate.parse(birthDateStr.trim());
+            } catch (Exception e) {}
+        }
+
+        String customPriceStr = request.get("customPrice");
+        BigDecimal customPrice = null;
+        if (customPriceStr != null && !customPriceStr.trim().isEmpty()) {
+            try {
+                customPrice = new BigDecimal(customPriceStr.trim());
+            } catch (Exception ignored) {}
         }
 
         Student student = Student.builder()
                 .firstName(firstName)
                 .lastName(lastName)
                 .status("ACTIVE")
-                .createdAt(java.time.LocalDateTime.now())
+                .phone(phone)
+                .telegram(telegram)
+                .parentName(parentName)
+                .parentPhone(parentPhone)
+                .birthDate(birthDate)
+                .address(address)
+                .gender(gender)
+                .customPrice(customPrice)
+                .createdAt(LocalDateTime.now())
                 .build();
         student = studentService.saveStudent(student);
 
@@ -221,7 +350,7 @@ public class StudentController {
                 .password(passwordEncoder.encode((password != null && !password.trim().isEmpty()) ? password.trim() : "student123"))
                 .role("STUDENT")
                 .student(student)
-                .createdAt(java.time.LocalDateTime.now())
+                .createdAt(LocalDateTime.now())
                 .build();
         userRepository.save(studentUser);
 
@@ -386,8 +515,43 @@ public class StudentController {
         String username = request.get("username");
         String password = request.get("password");
 
+        String phone = request.get("phone");
+        String telegram = request.get("telegram");
+        String parentName = request.get("parentName");
+        String parentPhone = request.get("parentPhone");
+        String birthDateStr = request.get("birthDate");
+        String address = request.get("address");
+        String gender = request.get("gender");
+
         if (firstName != null) student.setFirstName(firstName);
         if (lastName != null) student.setLastName(lastName);
+        if (phone != null) student.setPhone(phone);
+        if (telegram != null) student.setTelegram(telegram);
+        if (parentName != null) student.setParentName(parentName);
+        if (parentPhone != null) student.setParentPhone(parentPhone);
+        if (birthDateStr != null) {
+            if (birthDateStr.trim().isEmpty()) {
+                student.setBirthDate(null);
+            } else {
+                try {
+                    student.setBirthDate(LocalDate.parse(birthDateStr.trim()));
+                } catch (Exception e) {}
+            }
+        }
+        if (address != null) student.setAddress(address);
+        if (gender != null) student.setGender(gender);
+
+        String customPriceStr = request.get("customPrice");
+        if (customPriceStr != null) {
+            if (customPriceStr.trim().isEmpty()) {
+                student.setCustomPrice(null);
+            } else {
+                try {
+                    student.setCustomPrice(new BigDecimal(customPriceStr.trim()));
+                } catch (Exception ignored) {}
+            }
+        }
+
         studentService.saveStudent(student);
 
         // Update User credentials
@@ -399,7 +563,7 @@ public class StudentController {
                     .password(passwordEncoder.encode(password != null && !password.trim().isEmpty() ? password.trim() : "student123"))
                     .role("STUDENT")
                     .student(student)
-                    .createdAt(java.time.LocalDateTime.now())
+                    .createdAt(LocalDateTime.now())
                     .build();
         } else {
             studentUser.setFullName(student.getFirstName() + " " + student.getLastName());
@@ -437,5 +601,109 @@ public class StudentController {
             return ResponseEntity.notFound().build();
         }
         return ResponseEntity.ok(profile);
+    }
+
+    @GetMapping("/{id}/crm-profile")
+    public ResponseEntity<?> getStudentCrmProfile(@PathVariable Long id) {
+        Student student = studentService.getStudentById(id);
+        if (student == null) {
+            return ResponseEntity.notFound().build();
+        }
+
+        List<Enrollment> enrollments = enrollmentRepository.findByStudentId(id);
+        List<Invoice> invoices = invoiceRepository.findByEnrollmentStudentId(id);
+        List<Payment> payments = paymentRepository.findByInvoiceEnrollmentStudentId(id);
+
+        // Build a unified chronological timeline
+        List<Map<String, Object>> timeline = new java.util.ArrayList<>();
+
+        // Add lead creation/conversion events
+        if (student.getPhone() != null && !student.getPhone().isEmpty()) {
+            leadRepository.findByPhone(student.getPhone()).ifPresent(lead -> {
+                List<LeadEvent> leadEvents = leadEventRepository.findByLeadIdOrderByCreatedAtDesc(lead.getId());
+                for (LeadEvent le : leadEvents) {
+                    Map<String, Object> tEvent = new java.util.HashMap<>();
+                    tEvent.put("date", le.getCreatedAt());
+                    tEvent.put("type", "LEAD_EVENT");
+                    tEvent.put("title", "Lead Tarixi: " + le.getEventType());
+                    tEvent.put("description", le.getDescription());
+                    tEvent.put("operator", le.getCreatedBy() != null ? le.getCreatedBy().getFullName() : "Tizim");
+                    timeline.add(tEvent);
+                }
+            });
+        }
+
+        // Add enrollment events
+        for (Enrollment e : enrollments) {
+            if (e.getJoinedAt() != null) {
+                Map<String, Object> tEvent = new java.util.HashMap<>();
+                tEvent.put("date", e.getJoinedAt());
+                tEvent.put("type", "ENROLLMENT");
+                tEvent.put("title", "Guruhga Qabul");
+                tEvent.put("description", "Kurs: " + e.getPricePlan().getCourse().getName() + 
+                        (e.getGroup() != null ? ", Guruh: " + e.getGroup().getName() : "") + 
+                        ", Tarif: " + e.getPricePlan().getName());
+                tEvent.put("operator", "Tizim");
+                timeline.add(tEvent);
+            }
+            if (e.getLeftAt() != null) {
+                Map<String, Object> tEvent = new java.util.HashMap<>();
+                tEvent.put("date", e.getLeftAt());
+                tEvent.put("type", "ENROLLMENT_LEFT");
+                tEvent.put("title", "Guruhdan Chiqish / Muzlatish");
+                tEvent.put("description", "Holat: " + e.getStatus() + ", Izoh: " + e.getNotes());
+                tEvent.put("operator", "Tizim");
+                timeline.add(tEvent);
+            }
+        }
+
+        // Add invoice events
+        for (Invoice inv : invoices) {
+            Map<String, Object> tEvent = new java.util.HashMap<>();
+            tEvent.put("date", inv.getCreatedAt());
+            tEvent.put("type", "INVOICE");
+            tEvent.put("title", "Hisob-faktura Yaratildi");
+            tEvent.put("description", "Summa: " + inv.getAmount() + " UZS, Muddat: " + inv.getDueDate());
+            tEvent.put("operator", "Tizim");
+            timeline.add(tEvent);
+        }
+
+        // Add payment events
+        for (Payment pay : payments) {
+            Map<String, Object> tEvent = new java.util.HashMap<>();
+            tEvent.put("date", pay.getCreatedAt());
+            tEvent.put("type", "PAYMENT");
+            tEvent.put("title", "To'lov Qabul Qilindi");
+            tEvent.put("description", "Summa: " + pay.getAmount() + " UZS, Usul: " + pay.getPaymentMethod() + 
+                    (pay.getNotes() != null && !pay.getNotes().isEmpty() ? ", Izoh: " + pay.getNotes() : ""));
+            tEvent.put("operator", pay.getReceivedBy() != null ? pay.getReceivedBy().getFullName() : "Kassa");
+            timeline.add(tEvent);
+        }
+
+        // Add XP points events (PointTransaction)
+        List<PointTransaction> transactions = pointTransactionRepository.findByStudentId(id);
+        for (PointTransaction pt : transactions) {
+            if ("ACTIVE".equals(pt.getStatus())) {
+                Map<String, Object> tEvent = new java.util.HashMap<>();
+                tEvent.put("date", pt.getCreatedAt());
+                tEvent.put("type", "XP_AWARD");
+                tEvent.put("title", "XP Berildi: " + pt.getPoints() + " XP");
+                tEvent.put("description", pt.getDescription() + " (Qoida: " + pt.getPointRule().getName() + ", Soni: " + pt.getQuantity() + ")");
+                tEvent.put("operator", pt.getMentor().getFullName());
+                timeline.add(tEvent);
+            }
+        }
+
+        // Sort timeline descending by date
+        timeline.sort((a, b) -> ((LocalDateTime) b.get("date")).compareTo((LocalDateTime) a.get("date")));
+
+        Map<String, Object> response = new java.util.HashMap<>();
+        response.put("student", student);
+        response.put("invoices", invoices);
+        response.put("payments", payments);
+        response.put("enrollments", enrollments);
+        response.put("timeline", timeline);
+
+        return ResponseEntity.ok(response);
     }
 }

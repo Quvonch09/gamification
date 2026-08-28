@@ -8,32 +8,47 @@ import {
   Plus, 
   Edit3, 
   Archive, 
-  AlertTriangle,
-  X,
-  PlusCircle,
-  FileSpreadsheet,
-  ChevronDown,
-  Trash2,
-  Search
+  AlertTriangle, 
+  X, 
+  PlusCircle, 
+  FileSpreadsheet, 
+  ChevronDown, 
+  Trash2, 
+  Search,
+  DoorOpen,
+  Clock,
+  Calendar,
+  Phone,
+  User,
+  CheckCircle2
 } from 'lucide-react';
 import MentorMonitor from './MentorMonitor';
 import { useAuth } from '../context/AuthContext';
 import { useData } from '../context/DataContext';
 import CustomSelect from '../components/CustomSelect';
 
+const DAYS_OPTIONS = [
+  { value: 'DUSHANBA_CHORSHANBA_JUMA', label: 'Dushanba - Chorshanba - Juma (Toq kunlar)' },
+  { value: 'SESHANBA_PAYSHANBA_SHANBA', label: 'Seshanba - Payshanba - Shanba (Juft kunlar)' },
+  { value: 'HAR_KUNI', label: 'Har kuni (Dushanba - Shanba)' },
+  { value: 'DAM_OLISH', label: 'Shanba - Yakshanba (Weekend)' },
+  { value: 'MAXSUS', label: 'Maxsus kunlar' }
+];
+
 export default function AdminManagement({ activeSubTab }) {
   const { user } = useAuth();
   const { groups, courses, mentors, refreshData } = useData();
   const isSuperAdmin = user?.role === 'SUPER_ADMIN';
-  const isAdmin = user?.role === 'ADMIN';
-  const canManage = isSuperAdmin;
+  const isAdmin = user?.role === 'ADMIN' || user?.role === 'BRANCH_ADMIN' || user?.role === 'OPERATOR';
+  const canManage = isSuperAdmin || user?.role === 'BRANCH_ADMIN' || user?.role === 'ADMIN';
 
-  // Tabs: students, groups, mentors, courses, admins
+  // Tabs: students, groups, rooms, mentors, courses, admins
   const [activeTab, setActiveTab] = useState(activeSubTab || 'students');
   
   // Lists
   const [students, setStudents] = useState([]);
   const [adminsList, setAdminsList] = useState([]);
+  const [roomsList, setRoomsList] = useState([]);
   
   // Loaders
   const [loading, setLoading] = useState(false);
@@ -41,6 +56,7 @@ export default function AdminManagement({ activeSubTab }) {
   // Modals state
   const [showStudentModal, setShowStudentModal] = useState(false);
   const [showGroupModal, setShowGroupModal] = useState(false);
+  const [showRoomModal, setShowRoomModal] = useState(false);
   const [showMentorModal, setShowMentorModal] = useState(false);
   const [showCourseModal, setShowCourseModal] = useState(false);
   const [showAdminModal, setShowAdminModal] = useState(false);
@@ -49,11 +65,40 @@ export default function AdminManagement({ activeSubTab }) {
   const [editingItem, setEditingItem] = useState(null);
 
   // Form Fields
-  const [studentForm, setStudentForm] = useState({ firstName: '', lastName: '', groupId: '', username: '', password: '' });
-  const [groupForm, setGroupForm] = useState({ name: '', courseId: '', mentorId: '' });
+  const [studentForm, setStudentForm] = useState({
+    firstName: '',
+    lastName: '',
+    groupId: '',
+    username: '',
+    password: '',
+    initialPoints: '',
+    phone: '',
+    parentName: '',
+    parentPhone: ''
+  });
+
+  const [groupForm, setGroupForm] = useState({
+    name: '',
+    courseId: '',
+    mentorId: '',
+    roomId: '',
+    daysOfWeek: 'DUSHANBA_CHORSHANBA_JUMA',
+    startTime: '18:00',
+    endTime: '20:00',
+    lessonsPerMonth: 12
+  });
+
+  const [roomForm, setRoomForm] = useState({
+    name: '',
+    capacity: 15,
+    description: '',
+    status: 'ACTIVE'
+  });
+
   const [mentorForm, setMentorForm] = useState({ fullName: '', username: '', password: '' });
   const [courseForm, setCourseForm] = useState({ name: '' });
-  const [adminForm, setAdminForm] = useState({ fullName: '', username: '', password: '' });
+  const [adminForm, setAdminForm] = useState({ fullName: '', username: '', password: '', role: 'ADMIN' });
+  const [adminRoleFilter, setAdminRoleFilter] = useState('ALL');
 
   // Error/Success messages
   const [errorMessage, setErrorMessage] = useState('');
@@ -69,6 +114,7 @@ export default function AdminManagement({ activeSubTab }) {
   // Search states for each tab
   const [studentSearch, setStudentSearch] = useState('');
   const [groupSearch, setGroupSearch] = useState('');
+  const [roomSearch, setRoomSearch] = useState('');
   const [mentorSearch, setMentorSearch] = useState('');
   const [adminSearch, setAdminSearch] = useState('');
 
@@ -76,15 +122,18 @@ export default function AdminManagement({ activeSubTab }) {
   const [deleteConfirm, setDeleteConfirm] = useState({
     show: false,
     id: null,
-    type: '', // 'student' | 'group' | 'mentor' | 'admin-user'
+    type: '', // 'student' | 'group' | 'room' | 'mentor' | 'admin-user'
     message: ''
   });
 
   useEffect(() => {
     if (activeTab === 'admins' && isSuperAdmin) {
       loadAdmins();
+    } else if (activeTab === 'rooms') {
+      loadRooms();
     } else {
       loadAllData();
+      loadRooms();
     }
   }, [activeTab]);
 
@@ -92,7 +141,7 @@ export default function AdminManagement({ activeSubTab }) {
     setLoading(true);
     axios.get('/api/students')
       .then(res => {
-        setStudents(res.data);
+        setStudents(res.data || []);
       })
       .catch(err => {
         console.error("Error loading students data", err);
@@ -101,11 +150,19 @@ export default function AdminManagement({ activeSubTab }) {
       .finally(() => setLoading(false));
   };
 
+  const loadRooms = () => {
+    axios.get('/api/rooms')
+      .then(res => {
+        setRoomsList(res.data || []);
+      })
+      .catch(err => console.error("Error loading rooms", err));
+  };
+
   const loadAdmins = () => {
     setLoading(true);
     axios.get('/api/admin-users')
       .then(res => {
-        setAdminsList(res.data);
+        setAdminsList(res.data || []);
       })
       .catch(err => {
         console.error("Error loading admins data", err);
@@ -117,6 +174,7 @@ export default function AdminManagement({ activeSubTab }) {
   const handleCloseModals = () => {
     setShowStudentModal(false);
     setShowGroupModal(false);
+    setShowRoomModal(false);
     setShowMentorModal(false);
     setShowCourseModal(false);
     setShowAdminModal(false);
@@ -125,24 +183,25 @@ export default function AdminManagement({ activeSubTab }) {
     setErrorMessage('');
     setSuccessMessage('');
     // Clear forms
-    setStudentForm({ firstName: '', lastName: '', groupId: '', initialPoints: '', username: '', password: '' });
-    setGroupForm({ name: '', courseId: '', mentorId: '' });
+    setStudentForm({ firstName: '', lastName: '', groupId: '', initialPoints: '', username: '', password: '', phone: '', parentName: '', parentPhone: '' });
+    setGroupForm({ name: '', courseId: '', mentorId: '', roomId: '', daysOfWeek: 'DUSHANBA_CHORSHANBA_JUMA', startTime: '18:00', endTime: '20:00', lessonsPerMonth: 12 });
+    setRoomForm({ name: '', capacity: 15, description: '', status: 'ACTIVE' });
     setMentorForm({ fullName: '', username: '', password: '' });
     setCourseForm({ name: '' });
-    setAdminForm({ fullName: '', username: '', password: '' });
+    setAdminForm({ fullName: '', username: '', password: '', role: 'ADMIN' });
     setBulkForm({ groupId: groups[0]?.id || '', text: '' });
   };
 
-  // --- ADMIN ACTIONS ---
+  // --- ADMIN / USER ACTIONS ---
   const openAddAdmin = () => {
     setEditingItem(null);
-    setAdminForm({ fullName: '', username: '', password: '' });
+    setAdminForm({ fullName: '', username: '', password: '', role: 'ADMIN' });
     setShowAdminModal(true);
   };
 
   const openEditAdmin = (a) => {
     setEditingItem(a);
-    setAdminForm({ fullName: a.fullName, username: a.username, password: '' });
+    setAdminForm({ fullName: a.fullName, username: a.username, password: '', role: a.role || 'ADMIN' });
     setShowAdminModal(true);
   };
 
@@ -157,13 +216,13 @@ export default function AdminManagement({ activeSubTab }) {
 
     apiCall
       .then(() => {
-        setSuccessMessage(editingItem ? "Admin ma'lumotlari yangilandi!" : "Yangi admin muvaffaqiyatli qo'shildi!");
+        setSuccessMessage(editingItem ? "Foydalanuvchi ma'lumotlari yangilandi!" : "Yangi foydalanuvchi muvaffaqiyatli qo'shildi!");
         loadAdmins();
         setTimeout(handleCloseModals, 1200);
       })
       .catch(err => {
         console.error(err);
-        setErrorMessage(err.response?.data || "Adminni saqlashda xatolik yuz berdi.");
+        setErrorMessage(err.response?.data || "Foydalanuvchini saqlashda xatolik yuz berdi.");
       });
   };
 
@@ -172,20 +231,42 @@ export default function AdminManagement({ activeSubTab }) {
       show: true,
       id,
       type: 'admin-user',
-      message: "Ushbu adminni o'chirib tashlamoqchimisiz? Ushbu amal ortga qaytarilmaydi!"
+      message: "Ushbu foydalanuvchini o'chirib tashlamoqchimisiz? Ushbu amal ortga qaytarilmaydi!"
     });
   };
 
   // --- STUDENT ACTIONS ---
   const openAddStudent = () => {
     setEditingItem(null);
-    setStudentForm({ firstName: '', lastName: '', groupId: groups[0]?.id || '', initialPoints: '', username: '', password: '' });
+    setStudentForm({
+      firstName: '',
+      lastName: '',
+      groupId: groups[0]?.id || '',
+      initialPoints: '',
+      username: '',
+      password: '',
+      phone: '',
+      parentName: '',
+      parentPhone: '',
+      customPrice: ''
+    });
     setShowStudentModal(true);
   };
 
   const openEditStudent = (s) => {
     setEditingItem(s);
-    setStudentForm({ firstName: s.firstName, lastName: s.lastName, groupId: s.groupId || '', initialPoints: '', username: s.username || '', password: '' });
+    setStudentForm({
+      firstName: s.firstName || '',
+      lastName: s.lastName || '',
+      groupId: s.groupId || '',
+      initialPoints: '',
+      username: s.username || '',
+      password: '',
+      phone: s.phone || '',
+      parentName: s.parentName || '',
+      parentPhone: s.parentPhone || '',
+      customPrice: s.customPrice || ''
+    });
     setShowStudentModal(true);
   };
 
@@ -194,9 +275,17 @@ export default function AdminManagement({ activeSubTab }) {
     setErrorMessage('');
     setSuccessMessage('');
 
+    let formPayload = { ...studentForm };
+    if (formPayload.customPrice) {
+      const num = parseInt(String(formPayload.customPrice).replace(/\D/g, ''), 10);
+      if (!isNaN(num) && num > 0) {
+        formPayload.customPrice = num < 10000 ? String(num * 1000) : String(num);
+      }
+    }
+
     const apiCall = editingItem
-      ? axios.put(`/api/students/${editingItem.id}`, studentForm)
-      : axios.post('/api/students', studentForm);
+      ? axios.put(`/api/students/${editingItem.id}`, formPayload)
+      : axios.post('/api/students', formPayload);
 
     apiCall
       .then(() => {
@@ -246,13 +335,31 @@ export default function AdminManagement({ activeSubTab }) {
   // --- GROUP ACTIONS ---
   const openAddGroup = () => {
     setEditingItem(null);
-    setGroupForm({ name: '', courseId: courses[0]?.id || '', mentorId: mentors[0]?.id || '' });
+    setGroupForm({
+      name: '',
+      courseId: courses[0]?.id || '',
+      mentorId: mentors[0]?.id || '',
+      roomId: roomsList[0]?.id || '',
+      daysOfWeek: 'DUSHANBA_CHORSHANBA_JUMA',
+      startTime: '18:00',
+      endTime: '20:00',
+      lessonsPerMonth: 12
+    });
     setShowGroupModal(true);
   };
 
   const openEditGroup = (g) => {
     setEditingItem(g);
-    setGroupForm({ name: g.name, courseId: g.courseId || '', mentorId: g.mentorId || '' });
+    setGroupForm({
+      name: g.name,
+      courseId: g.courseId || '',
+      mentorId: g.mentorId || '',
+      roomId: g.roomId || '',
+      daysOfWeek: g.daysOfWeek || 'DUSHANBA_CHORSHANBA_JUMA',
+      startTime: g.startTime || '18:00',
+      endTime: g.endTime || '20:00',
+      lessonsPerMonth: g.lessonsPerMonth || 12
+    });
     setShowGroupModal(true);
   };
 
@@ -273,7 +380,7 @@ export default function AdminManagement({ activeSubTab }) {
       })
       .catch(err => {
         console.error(err);
-        setErrorMessage("Guruhni saqlashda xatolik yuz berdi.");
+        setErrorMessage(err.response?.data || "Guruhni saqlashda xatolik yuz berdi.");
       });
   };
 
@@ -282,46 +389,67 @@ export default function AdminManagement({ activeSubTab }) {
       show: true,
       id,
       type: 'group',
-      message: "Ushbu guruhni arxivlamoqchimisiz?"
+      message: "Ushbu guruhni arxivlamoqchimisiz? Guruhdagi talabalar guruhsiz qoladi."
     });
   };
 
-  const executeArchive = () => {
-    const { id, type } = deleteConfirm;
-    if (!id) return;
+  // --- ROOM ACTIONS ---
+  const openAddRoom = () => {
+    setEditingItem(null);
+    setRoomForm({ name: '', capacity: 15, description: '', status: 'ACTIVE' });
+    setShowRoomModal(true);
+  };
 
-    let endpoint = '';
-    if (type === 'student') endpoint = `/api/students/${id}`;
-    else if (type === 'group') endpoint = `/api/groups/${id}`;
-    else if (type === 'mentor') endpoint = `/api/mentors/${id}`;
-    else if (type === 'admin-user') endpoint = `/api/admin-users/${id}`;
+  const openEditRoom = (room) => {
+    setEditingItem(room);
+    setRoomForm({
+      name: room.name,
+      capacity: room.capacity || 15,
+      description: room.description || '',
+      status: room.status || 'ACTIVE'
+    });
+    setShowRoomModal(true);
+  };
 
-    axios.delete(endpoint)
+  const handleRoomSubmit = (e) => {
+    e.preventDefault();
+    setErrorMessage('');
+
+    const apiCall = editingItem
+      ? axios.put(`/api/rooms/${editingItem.id}`, roomForm)
+      : axios.post('/api/rooms', roomForm);
+
+    apiCall
       .then(() => {
-        refreshData();
-        if (type === 'admin-user') {
-          loadAdmins();
-        } else {
-          loadAllData();
-        }
-        setDeleteConfirm({ show: false, id: null, type: '', message: '' });
+        setSuccessMessage(editingItem ? "Xona yangilandi!" : "Yangi xona qo'shildi!");
+        loadRooms();
+        setTimeout(handleCloseModals, 1200);
       })
       .catch(err => {
         console.error(err);
-        setDeleteConfirm({ show: false, id: null, type: '', message: '' });
+        setErrorMessage(err.response?.data || "Xonani saqlashda xatolik yuz berdi.");
       });
+  };
+
+  const handleDeleteRoom = (id) => {
+    setDeleteConfirm({
+      show: true,
+      id,
+      type: 'room',
+      message: "Ushbu xonani o'chirmoqchimisiz?"
+    });
   };
 
   // --- MENTOR ACTIONS ---
   const openAddMentor = () => {
     setEditingItem(null);
-    setMentorForm({ fullName: '', username: '', password: '' });
+    setMentorForm({ fullName: '', username: '', password: '', color: '#16a34a' });
     setShowMentorModal(true);
   };
 
   const openEditMentor = (m) => {
     setEditingItem(m);
-    setMentorForm({ fullName: m.fullName, username: m.username, password: '' });
+    setMentorForm({ fullName: m.fullName, username: m.username, password: '', color: m.color || '#16a34a' });
     setShowMentorModal(true);
   };
 
@@ -358,7 +486,18 @@ export default function AdminManagement({ activeSubTab }) {
 
   // --- COURSE ACTIONS ---
   const openAddCourse = () => {
-    setCourseForm({ name: '' });
+    setEditingItem(null);
+    setCourseForm({ name: '', price: '', durationMonths: 1 });
+    setShowCourseModal(true);
+  };
+
+  const openEditCourse = (c) => {
+    setEditingItem(c);
+    setCourseForm({
+      name: c.name || '',
+      price: c.price || '',
+      durationMonths: c.durationMonths || 1
+    });
     setShowCourseModal(true);
   };
 
@@ -366,16 +505,65 @@ export default function AdminManagement({ activeSubTab }) {
     e.preventDefault();
     setErrorMessage('');
 
-    axios.post('/api/courses', courseForm)
+    let formPayload = { ...courseForm };
+    if (formPayload.price) {
+      const num = parseInt(String(formPayload.price).replace(/\D/g, ''), 10);
+      if (!isNaN(num) && num > 0) {
+        formPayload.price = num < 10000 ? String(num * 1000) : String(num);
+      }
+    }
+
+    const apiCall = editingItem
+      ? axios.put(`/api/courses/${editingItem.id}`, formPayload)
+      : axios.post('/api/courses', formPayload);
+
+    apiCall
       .then(() => {
-        setSuccessMessage("Kurs muvaffaqiyatli qo'shildi!");
+        setSuccessMessage(editingItem ? "Kurs yangilandi!" : "Kurs muvaffaqiyatli qo'shildi!");
         refreshData();
         loadAllData();
         setTimeout(handleCloseModals, 1200);
       })
       .catch(err => {
         console.error(err);
-        setErrorMessage("Kursni yaratishda xatolik yuz berdi.");
+        setErrorMessage(err.response?.data || "Kursni saqlashda xatolik yuz berdi.");
+      });
+  };
+
+  const handleDeleteCourse = (id) => {
+    setDeleteConfirm({
+      show: true,
+      id,
+      type: 'course',
+      message: "Ushbu kursni o'chirmoqchimisiz? Kursga tegishli guruhlar kursiz qolishi mumkin."
+    });
+  };
+
+  const executeArchive = () => {
+    const { id, type } = deleteConfirm;
+    let endpoint = '';
+    if (type === 'student') endpoint = `/api/students/${id}`;
+    if (type === 'group') endpoint = `/api/groups/${id}`;
+    if (type === 'room') endpoint = `/api/rooms/${id}`;
+    if (type === 'mentor') endpoint = `/api/mentors/${id}`;
+    if (type === 'admin-user') endpoint = `/api/admin-users/${id}`;
+    if (type === 'course') endpoint = `/api/courses/${id}`;
+
+    axios.delete(endpoint)
+      .then(() => {
+        refreshData();
+        if (type === 'admin-user') {
+          loadAdmins();
+        } else if (type === 'room') {
+          loadRooms();
+        } else {
+          loadAllData();
+        }
+        setDeleteConfirm({ show: false, id: null, type: '', message: '' });
+      })
+      .catch(err => {
+        console.error(err);
+        setDeleteConfirm({ show: false, id: null, type: '', message: '' });
       });
   };
 
@@ -386,7 +574,8 @@ export default function AdminManagement({ activeSubTab }) {
     return (
       s.fullName?.toLowerCase().includes(q) ||
       s.groupName?.toLowerCase().includes(q) ||
-      s.mentorName?.toLowerCase().includes(q)
+      s.phone?.includes(q) ||
+      s.parentPhone?.includes(q)
     );
   });
 
@@ -396,8 +585,15 @@ export default function AdminManagement({ activeSubTab }) {
     return (
       g.name?.toLowerCase().includes(q) ||
       g.mentorName?.toLowerCase().includes(q) ||
-      g.courseName?.toLowerCase().includes(q)
+      g.courseName?.toLowerCase().includes(q) ||
+      g.roomName?.toLowerCase().includes(q)
     );
+  });
+
+  const filteredRooms = roomsList.filter(r => {
+    if (!roomSearch.trim()) return true;
+    const q = roomSearch.toLowerCase();
+    return r.name.toLowerCase().includes(q) || (r.description && r.description.toLowerCase().includes(q));
   });
 
   const filteredMentors = mentors.filter(m => {
@@ -410,21 +606,20 @@ export default function AdminManagement({ activeSubTab }) {
   });
 
   const filteredAdmins = adminsList.filter(a => {
-    if (!adminSearch.trim()) return true;
-    const q = adminSearch.toLowerCase();
-    return (
-      a.fullName?.toLowerCase().includes(q) ||
-      a.username?.toLowerCase().includes(q)
-    );
+    const matchesSearch = !adminSearch.trim() || 
+      a.fullName?.toLowerCase().includes(adminSearch.toLowerCase()) ||
+      a.username?.toLowerCase().includes(adminSearch.toLowerCase());
+    const matchesRole = adminRoleFilter === 'ALL' || a.role === adminRoleFilter;
+    return matchesSearch && matchesRole;
   });
 
   return (
-    <div className="p-6 space-y-6 overflow-y-auto max-h-[calc(100vh-4rem)]">
+    <div className="p-4 sm:p-6 space-y-6 overflow-y-auto max-h-[calc(100vh-4rem)]">
       {/* Tab Switcher Headers */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-extrabold tracking-tight text-white">Ma'lumotlar Boshqaruvi</h1>
-          <p className="text-sm text-slate-400 mt-1">Akademiya talabalari, guruhlar, mentorlar va kurslarni boshqarish paneli</p>
+          <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white">Ma'lumotlar Boshqaruvi</h1>
+          <p className="text-xs sm:text-sm text-slate-400 mt-1">Akademiya talabalari, guruhlar, xonalar, mentorlar va kurslarni boshqarish</p>
         </div>
 
         {/* Global Toolbar buttons based on active tab */}
@@ -444,6 +639,11 @@ export default function AdminManagement({ activeSubTab }) {
               <Plus size={15} /> GURUH YARATISH
             </button>
           )}
+          {activeTab === 'rooms' && canManage && (
+            <button onClick={openAddRoom} className="flex items-center gap-1.5 px-4 py-2.5 bg-indigo-650 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold shadow shadow-indigo-500/10 cursor-pointer">
+              <Plus size={15} /> XONA QO'SHISH
+            </button>
+          )}
           {activeTab === 'mentors' && mentorSubTab === 'crud' && canManage && (
             <button onClick={openAddMentor} className="flex items-center gap-1.5 px-4 py-2.5 bg-indigo-650 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold shadow shadow-indigo-500/10 cursor-pointer">
               <Plus size={15} /> MENTOR YARATISH
@@ -456,50 +656,50 @@ export default function AdminManagement({ activeSubTab }) {
           )}
           {activeTab === 'admins' && isSuperAdmin && (
             <button onClick={openAddAdmin} className="flex items-center gap-1.5 px-4 py-2.5 bg-indigo-650 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold shadow shadow-indigo-500/10 cursor-pointer">
-              <Plus size={15} /> ADMIN QO'SHISH
+              <Plus size={15} /> FOYDALANUVCHI QO'SHISH
             </button>
           )}
         </div>
       </div>
 
       {/* Main Tab Navigation Buttons */}
-      <div className="flex border-b border-slate-800">
+      <div className="flex border-b border-slate-800 overflow-x-auto">
         <button
           onClick={() => setActiveTab('students')}
-          className={`px-6 py-3 font-semibold text-sm border-b-2 transition-all cursor-pointer ${
-            activeTab === 'students' 
-              ? 'border-indigo-500 text-indigo-400' 
-              : 'border-transparent text-slate-400 hover:text-slate-200'
+          className={`px-5 py-3 font-semibold text-sm border-b-2 transition-all cursor-pointer whitespace-nowrap ${
+            activeTab === 'students' ? 'border-indigo-500 text-indigo-400 font-extrabold' : 'border-transparent text-slate-400 hover:text-slate-200'
           }`}
         >
           O'quvchilar
         </button>
         <button
           onClick={() => setActiveTab('groups')}
-          className={`px-6 py-3 font-semibold text-sm border-b-2 transition-all cursor-pointer ${
-            activeTab === 'groups' 
-              ? 'border-indigo-500 text-indigo-400' 
-              : 'border-transparent text-slate-400 hover:text-slate-200'
+          className={`px-5 py-3 font-semibold text-sm border-b-2 transition-all cursor-pointer whitespace-nowrap ${
+            activeTab === 'groups' ? 'border-indigo-500 text-indigo-400 font-extrabold' : 'border-transparent text-slate-400 hover:text-slate-200'
           }`}
         >
           Guruhlar
         </button>
         <button
+          onClick={() => setActiveTab('rooms')}
+          className={`px-5 py-3 font-semibold text-sm border-b-2 transition-all cursor-pointer whitespace-nowrap ${
+            activeTab === 'rooms' ? 'border-indigo-500 text-indigo-400 font-extrabold' : 'border-transparent text-slate-400 hover:text-slate-200'
+          }`}
+        >
+          Xonalar
+        </button>
+        <button
           onClick={() => setActiveTab('mentors')}
-          className={`px-6 py-3 font-semibold text-sm border-b-2 transition-all cursor-pointer ${
-            activeTab === 'mentors' 
-              ? 'border-indigo-500 text-indigo-400' 
-              : 'border-transparent text-slate-400 hover:text-slate-200'
+          className={`px-5 py-3 font-semibold text-sm border-b-2 transition-all cursor-pointer whitespace-nowrap ${
+            activeTab === 'mentors' ? 'border-indigo-500 text-indigo-400 font-extrabold' : 'border-transparent text-slate-400 hover:text-slate-200'
           }`}
         >
           Mentorlar
         </button>
         <button
           onClick={() => setActiveTab('courses')}
-          className={`px-6 py-3 font-semibold text-sm border-b-2 transition-all cursor-pointer ${
-            activeTab === 'courses' 
-              ? 'border-indigo-500 text-indigo-400' 
-              : 'border-transparent text-slate-400 hover:text-slate-200'
+          className={`px-5 py-3 font-semibold text-sm border-b-2 transition-all cursor-pointer whitespace-nowrap ${
+            activeTab === 'courses' ? 'border-indigo-500 text-indigo-400 font-extrabold' : 'border-transparent text-slate-400 hover:text-slate-200'
           }`}
         >
           Kurslar
@@ -507,13 +707,11 @@ export default function AdminManagement({ activeSubTab }) {
         {isSuperAdmin && (
           <button
             onClick={() => setActiveTab('admins')}
-            className={`px-6 py-3 font-semibold text-sm border-b-2 transition-all cursor-pointer ${
-              activeTab === 'admins' 
-                ? 'border-indigo-500 text-indigo-400' 
-                : 'border-transparent text-slate-400 hover:text-slate-200'
+            className={`px-5 py-3 font-semibold text-sm border-b-2 transition-all cursor-pointer whitespace-nowrap ${
+              activeTab === 'admins' ? 'border-indigo-500 text-indigo-400 font-extrabold' : 'border-transparent text-slate-400 hover:text-slate-200'
             }`}
           >
-            Adminlar
+            Foydalanuvchilar & Rollar
           </button>
         )}
       </div>
@@ -535,7 +733,7 @@ export default function AdminManagement({ activeSubTab }) {
                   <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
                   <input
                     type="text"
-                    placeholder="Ism, guruh yoki o'qituvchi bo'yicha qidirish..."
+                    placeholder="Ism, guruh yoki telefon bo'yicha qidirish..."
                     value={studentSearch}
                     onChange={e => setStudentSearch(e.target.value)}
                     className="w-full h-9 pl-9 pr-4 bg-slate-950/60 border border-slate-700 rounded-xl text-slate-200 focus:outline-none focus:border-indigo-500 text-sm placeholder:text-slate-500"
@@ -546,21 +744,22 @@ export default function AdminManagement({ activeSubTab }) {
                     </button>
                   )}
                 </div>
-                {studentSearch && <p className="text-xs text-slate-500 mt-1.5">{filteredStudents.length} ta natija topildi</p>}
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
                   <thead>
                     <tr className="border-b border-slate-800 bg-slate-950/40 text-[10px] font-bold text-slate-400 tracking-wider uppercase">
                       <th className="py-4 px-6">TALABA</th>
+                      <th className="py-4 px-6">TELEFONLAR</th>
                       <th className="py-4 px-6">GURUH</th>
+                      <th className="py-4 px-6">TO'LOV VA QARZDORLIK</th>
                       <th className="py-4 px-6 text-center">JAMI XP</th>
                       {canManage && <th className="py-4 px-6 text-center">HARAKATLAR</th>}
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-800/60 text-slate-300 text-sm">
                     {filteredStudents.length === 0 ? (
-                      <tr><td colSpan={canManage ? 4 : 3} className="py-10 text-center text-slate-500">
+                      <tr><td colSpan={canManage ? 6 : 5} className="py-10 text-center text-slate-500">
                         <Search size={32} className="mx-auto mb-2 opacity-30" />
                         {studentSearch ? `"${studentSearch}" bo'yicha natija topilmadi` : "O'quvchilar yo'q"}
                       </td></tr>
@@ -568,10 +767,53 @@ export default function AdminManagement({ activeSubTab }) {
                       filteredStudents.map(s => (
                         <tr key={s.id} className="hover:bg-slate-850/20 transition-all">
                           <td className="py-4 px-6 font-bold text-slate-100">{s.fullName}</td>
-                          <td className="py-4 px-6 font-semibold uppercase text-xs text-slate-400">{s.groupName}</td>
+                          <td className="py-4 px-6 text-xs text-slate-400">
+                            <div>{s.phone || '—'}</div>
+                            {s.parentPhone && (
+                              <div className="text-[10px] text-slate-500">Ota-ona: {s.parentPhone}</div>
+                            )}
+                          </td>
+                          <td className="py-4 px-6 font-semibold uppercase text-xs text-slate-400">{s.groupName || 'Guruhsiz'}</td>
+                          <td className="py-4 px-6 text-xs">
+                            <div className="flex flex-col gap-1">
+                              <div className="flex items-center gap-1.5">
+                                {s.paymentStatus === 'PAID' && (
+                                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                                    To'liq to'langan
+                                  </span>
+                                )}
+                                {s.paymentStatus === 'PARTIALLY_PAID' && (
+                                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                                    Qisman to'langan
+                                  </span>
+                                )}
+                                {s.paymentStatus === 'DEBTOR' && (
+                                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/20 text-rose-300 border border-rose-500/30">
+                                    Qarzdor
+                                  </span>
+                                )}
+                                {(!s.paymentStatus || s.paymentStatus === 'NO_FEE') && (
+                                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-500/20 text-slate-400 border border-slate-500/30">
+                                    Guruhsiz
+                                  </span>
+                                )}
+                              </div>
+                              <div className="text-[11px] text-slate-300 flex items-center gap-2 flex-wrap">
+                                <span>To'langan: <strong className="text-emerald-400 font-mono">{(s.totalPaid || 0).toLocaleString()}</strong> UZS</span>
+                                {s.balanceDue > 0 && (
+                                  <span>Qarz: <strong className="text-rose-400 font-mono font-bold">{(s.balanceDue || 0).toLocaleString()}</strong> UZS</span>
+                                )}
+                                {s.customPrice && (
+                                  <span className="text-[10px] px-1.5 py-0.2 rounded bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 font-semibold">
+                                    Maxsus: {Number(s.customPrice).toLocaleString()} UZS
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </td>
                           <td className="py-4 px-6 text-center">
                             <span className="font-extrabold text-indigo-400 bg-indigo-500/10 px-2.5 py-1 rounded-lg border border-indigo-500/10 text-xs">
-                              {s.xp} XP
+                              {s.xp || 0} XP
                             </span>
                           </td>
                           {canManage && (
@@ -604,7 +846,7 @@ export default function AdminManagement({ activeSubTab }) {
                   <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
                   <input
                     type="text"
-                    placeholder="Guruh nomi, o'qituvchi yoki kurs bo'yicha qidirish..."
+                    placeholder="Guruh, kurs, mentor yoki xona qidirish..."
                     value={groupSearch}
                     onChange={e => setGroupSearch(e.target.value)}
                     className="w-full h-9 pl-9 pr-4 bg-slate-950/60 border border-slate-700 rounded-xl text-slate-200 focus:outline-none focus:border-indigo-500 text-sm placeholder:text-slate-500"
@@ -615,7 +857,6 @@ export default function AdminManagement({ activeSubTab }) {
                     </button>
                   )}
                 </div>
-                {groupSearch && <p className="text-xs text-slate-500 mt-1.5">{filteredGroups.length} ta natija topildi</p>}
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
@@ -623,13 +864,14 @@ export default function AdminManagement({ activeSubTab }) {
                     <tr className="border-b border-slate-800 bg-slate-950/40 text-[10px] font-bold text-slate-400 tracking-wider uppercase">
                       <th className="py-4 px-6">GURUH NOMI</th>
                       <th className="py-4 px-6">KURS</th>
+                      <th className="py-4 px-6">XONA & VAQT</th>
                       <th className="py-4 px-6">MENTOR</th>
                       {canManage && <th className="py-4 px-6 text-center">HARAKATLAR</th>}
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-800/60 text-slate-300 text-sm">
                     {filteredGroups.length === 0 ? (
-                      <tr><td colSpan={canManage ? 4 : 3} className="py-10 text-center text-slate-500">
+                      <tr><td colSpan={canManage ? 5 : 4} className="py-10 text-center text-slate-500">
                         <Search size={32} className="mx-auto mb-2 opacity-30" />
                         {groupSearch ? `"${groupSearch}" bo'yicha natija topilmadi` : "Guruhlar yo'q"}
                       </td></tr>
@@ -637,8 +879,12 @@ export default function AdminManagement({ activeSubTab }) {
                       filteredGroups.map(g => (
                         <tr key={g.id} className="hover:bg-slate-850/20 transition-all">
                           <td className="py-4 px-6 font-bold text-slate-100">{g.name}</td>
-                          <td className="py-4 px-6 font-semibold text-slate-400">{g.courseName}</td>
-                          <td className="py-4 px-6 font-semibold text-slate-400">{g.mentorName}</td>
+                          <td className="py-4 px-6 font-semibold text-slate-400">{g.courseName || '—'}</td>
+                          <td className="py-4 px-6 text-xs text-slate-400">
+                            <div className="font-bold text-slate-300">{g.roomName || 'Xona belgilanmagan'}</div>
+                            <div className="font-mono text-emerald-400">{g.startTime || '—'} - {g.endTime || '—'}</div>
+                          </td>
+                          <td className="py-4 px-6 font-semibold text-slate-400">{g.mentorName || 'Mentorsiz'}</td>
                           {canManage && (
                             <td className="py-4 px-6">
                               <div className="flex items-center justify-center gap-2">
@@ -660,17 +906,87 @@ export default function AdminManagement({ activeSubTab }) {
             </div>
           )}
 
+          {/* Panel: Rooms */}
+          {activeTab === 'rooms' && (
+            <div>
+              {/* Search bar */}
+              <div className="p-4 border-b border-slate-800">
+                <div className="relative max-w-md">
+                  <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+                  <input
+                    type="text"
+                    placeholder="Xona nomi yoki tavsifini qidirish..."
+                    value={roomSearch}
+                    onChange={e => setRoomSearch(e.target.value)}
+                    className="w-full h-9 pl-9 pr-4 bg-slate-950/60 border border-slate-700 rounded-xl text-slate-200 focus:outline-none focus:border-indigo-500 text-sm placeholder:text-slate-500"
+                  />
+                  {roomSearch && (
+                    <button onClick={() => setRoomSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300">
+                      <X size={14} />
+                    </button>
+                  )}
+                </div>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="border-b border-slate-800 bg-slate-950/40 text-[10px] font-bold text-slate-400 tracking-wider uppercase">
+                      <th className="py-4 px-6">XONA NOMI</th>
+                      <th className="py-4 px-6">SIG'IMI</th>
+                      <th className="py-4 px-6">TAVSIF</th>
+                      <th className="py-4 px-6 text-center">HOLAT</th>
+                      {canManage && <th className="py-4 px-6 text-center">HARAKATLAR</th>}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-800/60 text-slate-300 text-sm">
+                    {filteredRooms.length === 0 ? (
+                      <tr><td colSpan={canManage ? 5 : 4} className="py-10 text-center text-slate-500">
+                        <DoorOpen size={32} className="mx-auto mb-2 opacity-30" />
+                        Xonalar topilmadi.
+                      </td></tr>
+                    ) : (
+                      filteredRooms.map(r => (
+                        <tr key={r.id} className="hover:bg-slate-850/20 transition-all">
+                          <td className="py-4 px-6 font-bold text-slate-100 flex items-center gap-2">
+                            <DoorOpen size={16} className="text-cyan-400" />
+                            {r.name}
+                          </td>
+                          <td className="py-4 px-6 font-bold text-slate-300">{r.capacity || 15} kishi</td>
+                          <td className="py-4 px-6 text-xs text-slate-400">{r.description || '—'}</td>
+                          <td className="py-4 px-6 text-center">
+                            <span className="inline-block px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-xs font-bold uppercase">
+                              {r.status || 'ACTIVE'}
+                            </span>
+                          </td>
+                          {canManage && (
+                            <td className="py-4 px-6">
+                              <div className="flex items-center justify-center gap-2">
+                                <button onClick={() => openEditRoom(r)} className="w-8 h-8 rounded-lg bg-slate-800 hover:bg-indigo-650 text-slate-400 hover:text-white flex items-center justify-center cursor-pointer transition-colors border border-slate-700/50">
+                                  <Edit3 size={13} />
+                                </button>
+                                <button onClick={() => handleDeleteRoom(r.id)} className="w-8 h-8 rounded-lg bg-slate-800 hover:bg-rose-600/15 border border-slate-700/50 hover:border-rose-500/25 text-slate-400 hover:text-rose-400 flex items-center justify-center cursor-pointer transition-colors">
+                                  <Trash2 size={13} />
+                                </button>
+                              </div>
+                            </td>
+                          )}
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
           {/* Panel: Mentors */}
           {activeTab === 'mentors' && (
             <div className="p-6 space-y-6">
-              {/* Mentor Sub-tabs */}
               <div className="flex bg-slate-950/30 p-1 border border-slate-800 rounded-xl max-w-sm">
                 <button
                   onClick={() => setMentorSubTab('monitor')}
                   className={`flex-1 py-1.5 rounded-lg text-xs font-semibold cursor-pointer text-center ${
-                    mentorSubTab === 'monitor' 
-                      ? 'bg-indigo-600 text-white shadow' 
-                      : 'text-slate-400 hover:text-slate-200'
+                    mentorSubTab === 'monitor' ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-slate-200'
                   }`}
                 >
                   Faoliyat Monitoringi
@@ -678,9 +994,7 @@ export default function AdminManagement({ activeSubTab }) {
                 <button
                   onClick={() => setMentorSubTab('crud')}
                   className={`flex-1 py-1.5 rounded-lg text-xs font-semibold cursor-pointer text-center ${
-                    mentorSubTab === 'crud' 
-                      ? 'bg-indigo-600 text-white shadow' 
-                      : 'text-slate-400 hover:text-slate-200'
+                    mentorSubTab === 'crud' ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-slate-200'
                   }`}
                 >
                   Boshqaruv Ro'yxati
@@ -691,7 +1005,6 @@ export default function AdminManagement({ activeSubTab }) {
                 <MentorMonitor />
               ) : (
                 <div className="rounded-xl border border-slate-800/80 overflow-hidden">
-                  {/* Search bar */}
                   <div className="p-4 border-b border-slate-800 bg-slate-950/20">
                     <div className="relative max-w-md">
                       <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
@@ -708,7 +1021,6 @@ export default function AdminManagement({ activeSubTab }) {
                         </button>
                       )}
                     </div>
-                    {mentorSearch && <p className="text-xs text-slate-500 mt-1.5">{filteredMentors.length} ta natija topildi</p>}
                   </div>
                   <div className="overflow-x-auto">
                     <table className="w-full text-left border-collapse">
@@ -716,13 +1028,14 @@ export default function AdminManagement({ activeSubTab }) {
                         <tr className="border-b border-slate-800 bg-slate-950/50 text-[10px] font-bold text-slate-400 tracking-wider uppercase">
                           <th className="py-4 px-6">MENTOR F.I.O</th>
                           <th className="py-4 px-6">USERNAME</th>
+                          <th className="py-4 px-6">RANGI (JADVALDA)</th>
                           <th className="py-4 px-6">GURUHLARI</th>
                           {canManage && <th className="py-4 px-6 text-center">HARAKATLAR</th>}
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-850 text-slate-300 text-sm">
                         {filteredMentors.length === 0 ? (
-                          <tr><td colSpan={canManage ? 4 : 3} className="py-10 text-center text-slate-500">
+                          <tr><td colSpan={canManage ? 5 : 4} className="py-10 text-center text-slate-500">
                             <Search size={32} className="mx-auto mb-2 opacity-30" />
                             {mentorSearch ? `"${mentorSearch}" bo'yicha natija topilmadi` : "Mentorlar yo'q"}
                           </td></tr>
@@ -731,6 +1044,15 @@ export default function AdminManagement({ activeSubTab }) {
                             <tr key={m.id} className="hover:bg-slate-850/20 transition-all">
                               <td className="py-4 px-6 font-bold text-slate-100">{m.fullName}</td>
                               <td className="py-4 px-6 font-semibold text-slate-400">{m.username}</td>
+                              <td className="py-4 px-6">
+                                <div className="flex items-center gap-2">
+                                  <span 
+                                    className="w-4 h-4 rounded-full border border-white/20 shadow-sm" 
+                                    style={{ backgroundColor: m.color || '#3b82f6' }}
+                                  ></span>
+                                  <span className="text-xs font-mono text-slate-400">{m.color || '#3b82f6'}</span>
+                                </div>
+                              </td>
                               <td className="py-4 px-6">
                                 <div className="flex flex-wrap gap-1">
                                   {m.groups.length === 0 ? (
@@ -774,19 +1096,42 @@ export default function AdminManagement({ activeSubTab }) {
                 <thead>
                   <tr className="border-b border-slate-800 bg-slate-950/40 text-[10px] font-bold text-slate-400 tracking-wider uppercase">
                     <th className="py-4 px-6">KURS NOMI</th>
+                    <th className="py-4 px-6">DAVOMIYLIGI</th>
+                    <th className="py-4 px-6">OYLIK NARXI</th>
                     <th className="py-4 px-6 text-center">YARATILGAN SANA</th>
+                    {canManage && <th className="py-4 px-6 text-center">HARAKATLAR</th>}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-800/60 text-slate-300 text-sm">
                   {courses.length === 0 ? (
-                    <tr><td colSpan="2" className="py-8 text-center text-slate-500 font-semibold">Kurslar yo'q</td></tr>
+                    <tr><td colSpan={canManage ? 5 : 4} className="py-8 text-center text-slate-500 font-semibold">Kurslar yo'q</td></tr>
                   ) : (
                     courses.map(c => (
                       <tr key={c.id} className="hover:bg-slate-850/20 transition-all">
                         <td className="py-4 px-6 font-bold text-slate-100">{c.name}</td>
-                        <td className="py-4 px-6 text-center font-semibold text-slate-400">
+                        <td className="py-4 px-6 text-xs text-slate-300">
+                          <span className="px-2.5 py-1 rounded-md bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 font-bold">
+                            {c.durationMonths ? `${c.durationMonths} oy` : '1 oy'}
+                          </span>
+                        </td>
+                        <td className="py-4 px-6 font-semibold text-emerald-400 font-mono">
+                          {c.price ? `${Number(c.price).toLocaleString()} UZS` : "Belgilanmagan"}
+                        </td>
+                        <td className="py-4 px-6 text-center font-semibold text-slate-400 text-xs">
                           {c.createdAt ? new Date(c.createdAt).toLocaleDateString() : "Noma'lum"}
                         </td>
+                        {canManage && (
+                          <td className="py-4 px-6 text-center">
+                            <div className="flex items-center justify-center gap-2">
+                              <button onClick={() => openEditCourse(c)} className="w-8 h-8 rounded-lg bg-slate-800 hover:bg-indigo-650 text-slate-400 hover:text-white flex items-center justify-center cursor-pointer transition-colors border border-slate-700/50">
+                                <Edit3 size={13} />
+                              </button>
+                              <button onClick={() => handleDeleteCourse(c.id)} className="w-8 h-8 rounded-lg bg-slate-800 hover:bg-rose-600/15 border border-slate-700/50 hover:border-rose-500/25 text-slate-400 hover:text-rose-400 flex items-center justify-center cursor-pointer transition-colors">
+                                <Trash2 size={13} />
+                              </button>
+                            </div>
+                          </td>
+                        )}
                       </tr>
                     ))
                   )}
@@ -798,57 +1143,106 @@ export default function AdminManagement({ activeSubTab }) {
           {/* Panel: Admins */}
           {activeTab === 'admins' && isSuperAdmin && (
             <div>
-              {/* Search bar */}
-              <div className="p-4 border-b border-slate-800">
-                <div className="relative max-w-md">
-                  <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
-                  <input
-                    type="text"
-                    placeholder="Admin ismi yoki username bo'yicha qidirish..."
-                    value={adminSearch}
-                    onChange={e => setAdminSearch(e.target.value)}
-                    className="w-full h-9 pl-9 pr-4 bg-slate-950/60 border border-slate-700 rounded-xl text-slate-200 focus:outline-none focus:border-indigo-500 text-sm placeholder:text-slate-500"
-                  />
-                  {adminSearch && (
-                    <button onClick={() => setAdminSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300">
-                      <X size={14} />
-                    </button>
-                  )}
+              <div className="p-4 border-b border-slate-800 space-y-3">
+                <div className="flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between">
+                  <div className="relative flex-1 max-w-md">
+                    <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+                    <input
+                      type="text"
+                      placeholder="Ism, username orqali qidirish..."
+                      value={adminSearch}
+                      onChange={e => setAdminSearch(e.target.value)}
+                      className="w-full h-9 pl-9 pr-4 bg-slate-950/60 border border-slate-700 rounded-xl text-slate-200 focus:outline-none focus:border-indigo-500 text-sm placeholder:text-slate-500"
+                    />
+                    {adminSearch && (
+                      <button onClick={() => setAdminSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300">
+                        <X size={14} />
+                      </button>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs">
+                    {[
+                      { key: 'ALL', label: 'Barchasi' },
+                      { key: 'ADMIN', label: 'Admin' },
+                      { key: 'OPERATOR', label: 'Operator' },
+                      { key: 'CASHIER', label: 'Kassir' },
+                      { key: 'ACCOUNTANT', label: 'Hisobchi' },
+                      { key: 'MENTOR', label: 'Mentor' },
+                      { key: 'BRANCH_ADMIN', label: 'Filial Admin' },
+                      { key: 'SUPER_ADMIN', label: 'Super Admin' }
+                    ].map(rf => (
+                      <button
+                        key={rf.key}
+                        onClick={() => setAdminRoleFilter(rf.key)}
+                        className={`px-2.5 py-1 rounded-lg font-bold border transition-all cursor-pointer shrink-0 ${
+                          adminRoleFilter === rf.key
+                            ? 'bg-indigo-600 border-indigo-500 text-white shadow shadow-indigo-600/30'
+                            : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200'
+                        }`}
+                      >
+                        {rf.label}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-                {adminSearch && <p className="text-xs text-slate-500 mt-1.5">{filteredAdmins.length} ta natija topildi</p>}
               </div>
+
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
                   <thead>
                     <tr className="border-b border-slate-800 bg-slate-950/40 text-[10px] font-bold text-slate-400 tracking-wider uppercase">
                       <th className="py-4 px-6">TO'LIQ ISM</th>
                       <th className="py-4 px-6">USERNAME</th>
+                      <th className="py-4 px-6">ROL / VAZIFA</th>
+                      <th className="py-4 px-6">QO'SHILGAN VAQTI</th>
                       <th className="py-4 px-6 text-center">HARAKATLAR</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-800/60 text-slate-300 text-sm">
                     {filteredAdmins.length === 0 ? (
-                      <tr><td colSpan="3" className="py-10 text-center text-slate-500 font-semibold">
+                      <tr><td colSpan="5" className="py-10 text-center text-slate-500 font-semibold">
                         <Search size={32} className="mx-auto mb-2 opacity-30" />
-                        {adminSearch ? `"${adminSearch}" bo'yicha natija topilmadi` : "Adminlar yo'q"}
+                        {adminSearch ? `"${adminSearch}" bo'yicha natija topilmadi` : "Foydalanuvchilar topilmadi"}
                       </td></tr>
                     ) : (
-                      filteredAdmins.map(a => (
-                        <tr key={a.id} className="hover:bg-slate-850/20 transition-all">
-                          <td className="py-4 px-6 font-bold text-slate-100">{a.fullName}</td>
-                          <td className="py-4 px-6 font-semibold text-slate-400">{a.username}</td>
-                          <td className="py-4 px-6">
-                            <div className="flex items-center justify-center gap-2">
-                              <button onClick={() => openEditAdmin(a)} className="w-8 h-8 rounded-lg bg-slate-800 hover:bg-indigo-650 text-slate-400 hover:text-white flex items-center justify-center cursor-pointer transition-colors border border-slate-700/50">
-                                <Edit3 size={13} />
-                              </button>
-                              <button onClick={() => handleDeleteAdmin(a.id)} className="w-8 h-8 rounded-lg bg-slate-800 hover:bg-rose-600/15 border border-slate-700/50 hover:border-rose-500/25 text-slate-400 hover:text-rose-400 flex items-center justify-center cursor-pointer transition-colors">
-                                <Trash2 size={13} />
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))
+                      filteredAdmins.map(a => {
+                        const roleColor = 
+                          a.role === 'SUPER_ADMIN' ? 'bg-purple-500/10 text-purple-400 border-purple-500/20' :
+                          a.role === 'ADMIN' ? 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20' :
+                          a.role === 'OPERATOR' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' :
+                          a.role === 'CASHIER' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
+                          a.role === 'ACCOUNTANT' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' :
+                          a.role === 'BRANCH_ADMIN' ? 'bg-orange-500/10 text-orange-400 border-orange-500/20' :
+                          a.role === 'MENTOR' ? 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20' :
+                          'bg-slate-500/10 text-slate-400 border-slate-500/20';
+
+                        return (
+                          <tr key={a.id} className="hover:bg-slate-850/20 transition-all">
+                            <td className="py-4 px-6 font-bold text-slate-100">{a.fullName}</td>
+                            <td className="py-4 px-6 font-semibold text-slate-400 font-mono text-xs">{a.username}</td>
+                            <td className="py-4 px-6">
+                              <span className={`inline-block text-[10px] font-extrabold tracking-wider px-2.5 py-1 rounded-md border uppercase ${roleColor}`}>
+                                {a.role}
+                              </span>
+                            </td>
+                            <td className="py-4 px-6 text-xs text-slate-500">
+                              {a.createdAt ? new Date(a.createdAt).toLocaleDateString() : '-'}
+                            </td>
+                            <td className="py-4 px-6">
+                              <div className="flex items-center justify-center gap-2">
+                                <button onClick={() => openEditAdmin(a)} className="w-8 h-8 rounded-lg bg-slate-800 hover:bg-indigo-650 text-slate-400 hover:text-white flex items-center justify-center cursor-pointer transition-colors border border-slate-700/50">
+                                  <Edit3 size={13} />
+                                </button>
+                                {a.username !== 'admin' && (
+                                  <button onClick={() => handleDeleteAdmin(a.id)} className="w-8 h-8 rounded-lg bg-slate-800 hover:bg-rose-600/15 border border-slate-700/50 hover:border-rose-500/25 text-slate-400 hover:text-rose-400 flex items-center justify-center cursor-pointer transition-colors">
+                                    <Trash2 size={13} />
+                                  </button>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })
                     )}
                   </tbody>
                 </table>
@@ -862,8 +1256,8 @@ export default function AdminManagement({ activeSubTab }) {
 
       {/* Modal: Student CRUD */}
       {showStudentModal && (
-        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
-          <form onSubmit={handleStudentSubmit} className="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-4">
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-[100] p-4 animate-fadeIn">
+          <form onSubmit={handleStudentSubmit} className="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-lg w-full shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <h3 className="font-extrabold text-white text-base">
                 {editingItem ? "Talabani Tahrirlash" : "Yangi Talaba Qo'shish"}
@@ -875,26 +1269,63 @@ export default function AdminManagement({ activeSubTab }) {
             {successMessage && <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-lg text-emerald-400 text-xs font-semibold">{successMessage}</div>}
 
             <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-400 mb-1">ISM *</label>
+                  <input
+                    type="text"
+                    required
+                    value={studentForm.firstName}
+                    onChange={(e) => setStudentForm({ ...studentForm, firstName: e.target.value })}
+                    className="w-full h-10 px-3 bg-slate-850 border border-slate-800 rounded-lg text-slate-200 text-sm focus:outline-none focus:border-indigo-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-400 mb-1">FAMILIYA *</label>
+                  <input
+                    type="text"
+                    required
+                    value={studentForm.lastName}
+                    onChange={(e) => setStudentForm({ ...studentForm, lastName: e.target.value })}
+                    className="w-full h-10 px-3 bg-slate-850 border border-slate-800 rounded-lg text-slate-200 text-sm focus:outline-none focus:border-indigo-500"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-400 mb-1">TELEFON RAQAMI</label>
+                  <input
+                    type="text"
+                    placeholder="+998 90 123 45 67"
+                    value={studentForm.phone}
+                    onChange={(e) => setStudentForm({ ...studentForm, phone: e.target.value })}
+                    className="w-full h-10 px-3 bg-slate-850 border border-slate-800 rounded-lg text-slate-200 text-sm focus:outline-none focus:border-indigo-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-400 mb-1">OTA-ONASI TELEFONI</label>
+                  <input
+                    type="text"
+                    placeholder="+998 90 987 65 43"
+                    value={studentForm.parentPhone}
+                    onChange={(e) => setStudentForm({ ...studentForm, parentPhone: e.target.value })}
+                    className="w-full h-10 px-3 bg-slate-850 border border-slate-800 rounded-lg text-slate-200 text-sm focus:outline-none focus:border-indigo-500"
+                  />
+                </div>
+              </div>
+
               <div>
-                <label className="block text-xs font-bold text-slate-400 mb-1">ISM</label>
+                <label className="block text-xs font-bold text-slate-400 mb-1">OTA-ONASI F.I.SH</label>
                 <input
                   type="text"
-                  required
-                  value={studentForm.firstName}
-                  onChange={(e) => setStudentForm({ ...studentForm, firstName: e.target.value })}
+                  placeholder="Masalan: Karim Aliyev (Otasi)"
+                  value={studentForm.parentName}
+                  onChange={(e) => setStudentForm({ ...studentForm, parentName: e.target.value })}
                   className="w-full h-10 px-3 bg-slate-850 border border-slate-800 rounded-lg text-slate-200 text-sm focus:outline-none focus:border-indigo-500"
                 />
               </div>
-              <div>
-                <label className="block text-xs font-bold text-slate-400 mb-1">FAMILIYA</label>
-                <input
-                  type="text"
-                  required
-                  value={studentForm.lastName}
-                  onChange={(e) => setStudentForm({ ...studentForm, lastName: e.target.value })}
-                  className="w-full h-10 px-3 bg-slate-850 border border-slate-800 rounded-lg text-slate-200 text-sm focus:outline-none focus:border-indigo-500"
-                />
-              </div>
+
               <div>
                 <label className="block text-xs font-bold text-slate-400 mb-1">GURUH (BIRIKTIRISH)</label>
                 <CustomSelect
@@ -908,12 +1339,12 @@ export default function AdminManagement({ activeSubTab }) {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-slate-400 mb-1">FOYDALANUVCHI NOMI (USERNAME)</label>
+                  <label className="block text-xs font-bold text-slate-400 mb-1">USERNAME</label>
                   <input
                     type="text"
                     value={studentForm.username}
                     onChange={(e) => setStudentForm({ ...studentForm, username: e.target.value })}
-                    placeholder="ixtiyoriy (auto-generate)"
+                    placeholder="ixtiyoriy (auto)"
                     className="w-full h-10 px-3 bg-slate-850 border border-slate-800 rounded-lg text-slate-200 text-sm focus:outline-none focus:border-indigo-500 font-mono text-xs"
                   />
                 </div>
@@ -929,9 +1360,51 @@ export default function AdminManagement({ activeSubTab }) {
                 </div>
               </div>
 
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-xs font-bold text-slate-400">
+                    INDIVIDUAL / CHEGIRMALI OYLIK NARX (UZS)
+                  </label>
+                  {studentForm.customPrice && (
+                    <span className="text-[10px] font-mono font-bold text-indigo-400">
+                      {Number(Number(studentForm.customPrice) < 10000 && Number(studentForm.customPrice) > 0 ? Number(studentForm.customPrice) * 1000 : Number(studentForm.customPrice) || 0).toLocaleString()} UZS
+                    </span>
+                  )}
+                </div>
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={studentForm.customPrice || ''}
+                    onChange={(e) => setStudentForm({ ...studentForm, customPrice: e.target.value })}
+                    onBlur={() => {
+                      if (!studentForm.customPrice) return;
+                      const num = parseInt(String(studentForm.customPrice).replace(/\D/g, ''), 10);
+                      if (!isNaN(num) && num > 0) {
+                        setStudentForm(prev => ({ ...prev, customPrice: num < 10000 ? String(num * 1000) : String(num) }));
+                      }
+                    }}
+                    placeholder="Masalan: 450 yoki 450000 (ixtiyoriy)"
+                    className="w-full h-10 pl-3 pr-11 bg-slate-850 border border-slate-800 rounded-lg text-slate-200 text-sm focus:outline-none focus:border-indigo-500 font-mono"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const num = parseInt(String(studentForm.customPrice).replace(/\D/g, ''), 10);
+                      if (!isNaN(num) && num > 0) {
+                        setStudentForm({ ...studentForm, customPrice: String(num * 1000) });
+                      }
+                    }}
+                    className="absolute right-1.5 top-1/2 -translate-y-1/2 px-1.5 py-0.5 bg-slate-800 hover:bg-slate-750 text-slate-300 text-[10px] font-bold rounded border border-slate-700 cursor-pointer"
+                    title="3 ta nol qo'shish"
+                  >
+                    +000
+                  </button>
+                </div>
+              </div>
+
               {!editingItem && (
                 <div>
-                  <label className="block text-xs font-bold text-slate-400 mb-1">BOSHLANG'ICH BALL (TIZIMDAN OLDINGI)</label>
+                  <label className="block text-xs font-bold text-slate-400 mb-1">BOSHLANG'ICH BALL</label>
                   <input
                     type="number"
                     value={studentForm.initialPoints || ''}
@@ -953,8 +1426,8 @@ export default function AdminManagement({ activeSubTab }) {
 
       {/* Modal: Group CRUD */}
       {showGroupModal && (
-        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
-          <form onSubmit={handleGroupSubmit} className="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-4">
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-[100] p-4 animate-fadeIn">
+          <form onSubmit={handleGroupSubmit} className="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-lg w-full shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <h3 className="font-extrabold text-white text-base">
                 {editingItem ? "Guruhni Tahrirlash" : "Yangi Guruh Yaratish"}
@@ -967,34 +1440,151 @@ export default function AdminManagement({ activeSubTab }) {
 
             <div className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-slate-400 mb-1">GURUH NOMI</label>
+                <label className="block text-xs font-bold text-slate-400 mb-1">GURUH NOMI *</label>
                 <input
                   type="text"
                   required
-                  placeholder="Masalan: JAVA 18:00"
+                  placeholder="Masalan: Frontend G-14 (18:00)"
                   value={groupForm.name}
                   onChange={(e) => setGroupForm({ ...groupForm, name: e.target.value })}
                   className="w-full h-10 px-3 bg-slate-850 border border-slate-800 rounded-lg text-slate-200 text-sm focus:outline-none focus:border-indigo-500"
                 />
               </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-400 mb-1">KURS *</label>
+                  <CustomSelect
+                    value={groupForm.courseId}
+                    onChange={(val) => setGroupForm({ ...groupForm, courseId: val })}
+                    options={courses.map(c => ({ value: c.id, label: c.name }))}
+                    placeholder="Kursni tanlang"
+                    className="w-full"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-400 mb-1">MENTOR</label>
+                  <CustomSelect
+                    value={groupForm.mentorId}
+                    onChange={(val) => setGroupForm({ ...groupForm, mentorId: val })}
+                    options={mentors.map(m => ({ value: m.id, label: m.fullName }))}
+                    placeholder="Mentorsiz"
+                    className="w-full"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-400 mb-1">O'QUV XONASI</label>
+                  <CustomSelect
+                    value={groupForm.roomId}
+                    onChange={(val) => setGroupForm({ ...groupForm, roomId: val })}
+                    options={roomsList.map(r => ({ value: r.id, label: `${r.name} (${r.capacity} kishi)` }))}
+                    placeholder="Xonani tanlang"
+                    className="w-full"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-400 mb-1">OYLIK DARSLAR SONI</label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={groupForm.lessonsPerMonth}
+                    onChange={(e) => setGroupForm({ ...groupForm, lessonsPerMonth: parseInt(e.target.value) || 12 })}
+                    className="w-full h-10 px-3 bg-slate-850 border border-slate-800 rounded-lg text-slate-200 text-sm focus:outline-none focus:border-indigo-500"
+                  />
+                </div>
+              </div>
+
               <div>
-                <label className="block text-xs font-bold text-slate-400 mb-1">KURS</label>
+                <label className="block text-xs font-bold text-slate-400 mb-1">DARS KUNLARI</label>
                 <CustomSelect
-                  value={groupForm.courseId}
-                  onChange={(val) => setGroupForm({ ...groupForm, courseId: val })}
-                  options={courses.map(c => ({ value: c.id, label: c.name }))}
-                  placeholder="Kursni tanlang"
+                  value={groupForm.daysOfWeek}
+                  onChange={(val) => setGroupForm({ ...groupForm, daysOfWeek: val })}
+                  options={DAYS_OPTIONS}
+                  placeholder="Dars kunlarini tanlang"
                   className="w-full"
                 />
               </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-400 mb-1">BOSHLANISH VAQTI</label>
+                  <input
+                    type="time"
+                    value={groupForm.startTime}
+                    onChange={(e) => setGroupForm({ ...groupForm, startTime: e.target.value })}
+                    className="w-full h-10 px-3 bg-slate-850 border border-slate-800 rounded-lg text-slate-200 text-sm focus:outline-none focus:border-indigo-500 font-mono"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-400 mb-1">TUGASH VAQTI</label>
+                  <input
+                    type="time"
+                    value={groupForm.endTime}
+                    onChange={(e) => setGroupForm({ ...groupForm, endTime: e.target.value })}
+                    className="w-full h-10 px-3 bg-slate-850 border border-slate-800 rounded-lg text-slate-200 text-sm focus:outline-none focus:border-indigo-500 font-mono"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="pt-4 flex gap-3">
+              <button type="button" onClick={handleCloseModals} className="flex-1 py-2.5 bg-slate-800 hover:bg-slate-750 text-slate-300 font-semibold rounded-lg text-xs cursor-pointer border border-slate-700/50">Bekor qilish</button>
+              <button type="submit" className="flex-1 py-2.5 bg-indigo-650 hover:bg-indigo-500 text-white font-semibold rounded-lg text-xs cursor-pointer shadow shadow-indigo-500/10">Saqlash</button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* Modal: Room CRUD */}
+      {showRoomModal && (
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-[100] p-4 animate-fadeIn">
+          <form onSubmit={handleRoomSubmit} className="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <h3 className="font-extrabold text-white text-base">
+                {editingItem ? "Xonani Tahrirlash" : "Yangi Xona Qo'shish"}
+              </h3>
+              <button type="button" onClick={handleCloseModals} className="text-slate-400 hover:text-white cursor-pointer"><X size={18} /></button>
+            </div>
+
+            {errorMessage && <div className="p-3 bg-rose-500/10 border border-rose-500/20 rounded-lg text-rose-400 text-xs font-semibold">{errorMessage}</div>}
+            {successMessage && <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-lg text-emerald-400 text-xs font-semibold">{successMessage}</div>}
+
+            <div className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-slate-400 mb-1">MENTOR</label>
-                <CustomSelect
-                  value={groupForm.mentorId}
-                  onChange={(val) => setGroupForm({ ...groupForm, mentorId: val })}
-                  options={mentors.map(m => ({ value: m.id, label: m.fullName }))}
-                  placeholder="Mentorsiz"
-                  className="w-full"
+                <label className="block text-xs font-bold text-slate-400 mb-1">XONA NOMI *</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Masalan: Xona 101 (Frontend Lab)"
+                  value={roomForm.name}
+                  onChange={(e) => setRoomForm({ ...roomForm, name: e.target.value })}
+                  className="w-full h-10 px-3 bg-slate-850 border border-slate-800 rounded-lg text-slate-200 text-sm focus:outline-none focus:border-indigo-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-400 mb-1">SIG'IMI (O'QUVCHILAR SONI) *</label>
+                <input
+                  type="number"
+                  required
+                  min="1"
+                  value={roomForm.capacity}
+                  onChange={(e) => setRoomForm({ ...roomForm, capacity: parseInt(e.target.value) || 15 })}
+                  className="w-full h-10 px-3 bg-slate-850 border border-slate-800 rounded-lg text-slate-200 text-sm focus:outline-none focus:border-indigo-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-400 mb-1">TAVSIF (IXTIYORIY)</label>
+                <input
+                  type="text"
+                  placeholder="Masalan: iMac kompyuterlar, proyektor mavjud"
+                  value={roomForm.description}
+                  onChange={(e) => setRoomForm({ ...roomForm, description: e.target.value })}
+                  className="w-full h-10 px-3 bg-slate-850 border border-slate-800 rounded-lg text-slate-200 text-sm focus:outline-none focus:border-indigo-500"
                 />
               </div>
             </div>
@@ -1055,6 +1645,30 @@ export default function AdminManagement({ activeSubTab }) {
                   className="w-full h-10 px-3 bg-slate-850 border border-slate-800 rounded-lg text-slate-200 text-sm focus:outline-none focus:border-indigo-500"
                 />
               </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-400 mb-1">DARS JADVALI UCHUN RANG</label>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="color"
+                    value={mentorForm.color || '#3b82f6'}
+                    onChange={(e) => setMentorForm({ ...mentorForm, color: e.target.value })}
+                    className="w-10 h-10 rounded-lg cursor-pointer bg-slate-850 border border-slate-800 p-1"
+                  />
+                  <div className="flex items-center flex-wrap gap-1.5">
+                    {['#16a34a', '#2563eb', '#dc2626', '#d97706', '#9333ea', '#0d9488', '#ea580c', '#e11d48'].map((c) => (
+                      <button
+                        key={c}
+                        type="button"
+                        onClick={() => setMentorForm({ ...mentorForm, color: c })}
+                        style={{ backgroundColor: c }}
+                        className={`w-6 h-6 rounded-md transition-all ${
+                          (mentorForm.color || '').toLowerCase() === c.toLowerCase() ? 'ring-2 ring-white scale-110' : 'opacity-70 hover:opacity-100'
+                        }`}
+                      />
+                    ))}
+                  </div>
+                </div>
+              </div>
             </div>
 
             <div className="pt-4 flex gap-3">
@@ -1072,40 +1686,99 @@ export default function AdminManagement({ activeSubTab }) {
         <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
           <form onSubmit={handleCourseSubmit} className="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-4">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <h3 className="font-extrabold text-white text-base">Kurs Qo'shish</h3>
+              <h3 className="font-extrabold text-white text-base">
+                {editingItem ? "Kursni Tahrirlash" : "Yangi Kurs Qo'shish"}
+              </h3>
               <button type="button" onClick={handleCloseModals} className="text-slate-400 hover:text-white cursor-pointer"><X size={18} /></button>
             </div>
 
             {errorMessage && <div className="p-3 bg-rose-500/10 border border-rose-500/20 rounded-lg text-rose-400 text-xs font-semibold">{errorMessage}</div>}
             {successMessage && <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-lg text-emerald-400 text-xs font-semibold">{successMessage}</div>}
 
-            <div>
-              <label className="block text-xs font-bold text-slate-400 mb-1">KURS NOMI</label>
-              <input
-                type="text"
-                required
-                placeholder="Masalan: FLUTTER"
-                value={courseForm.name}
-                onChange={(e) => setCourseForm({ ...courseForm, name: e.target.value })}
-                className="w-full h-10 px-3 bg-slate-850 border border-slate-800 rounded-lg text-slate-200 text-sm focus:outline-none focus:border-indigo-500"
-              />
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-400 mb-1">KURS NOMI *</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Masalan: FLUTTER DASTURLASH"
+                  value={courseForm.name}
+                  onChange={(e) => setCourseForm({ ...courseForm, name: e.target.value })}
+                  className="w-full h-10 px-3 bg-slate-850 border border-slate-800 rounded-lg text-slate-200 text-sm focus:outline-none focus:border-indigo-500 font-semibold"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-400 mb-1">DAVOMIYLIGI (OY)</label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="36"
+                    value={courseForm.durationMonths || 1}
+                    onChange={(e) => setCourseForm({ ...courseForm, durationMonths: parseInt(e.target.value) || 1 })}
+                    className="w-full h-10 px-3 bg-slate-850 border border-slate-800 rounded-lg text-slate-200 text-sm focus:outline-none focus:border-indigo-500"
+                  />
+                </div>
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-xs font-bold text-slate-400">OYLIK NARXI (UZS)</label>
+                    {courseForm.price && (
+                      <span className="text-[10px] font-mono font-bold text-emerald-400">
+                        {Number(Number(courseForm.price) < 10000 && Number(courseForm.price) > 0 ? Number(courseForm.price) * 1000 : Number(courseForm.price) || 0).toLocaleString()} UZS
+                      </span>
+                    )}
+                  </div>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      placeholder="Masalan: 600 yoki 600000"
+                      value={courseForm.price || ''}
+                      onChange={(e) => setCourseForm({ ...courseForm, price: e.target.value })}
+                      onBlur={() => {
+                        if (!courseForm.price) return;
+                        const num = parseInt(String(courseForm.price).replace(/\D/g, ''), 10);
+                        if (!isNaN(num) && num > 0) {
+                          setCourseForm(prev => ({ ...prev, price: num < 10000 ? String(num * 1000) : String(num) }));
+                        }
+                      }}
+                      className="w-full h-10 pl-3 pr-11 bg-slate-850 border border-slate-800 rounded-lg text-slate-200 text-sm focus:outline-none focus:border-indigo-500 font-mono"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const num = parseInt(String(courseForm.price).replace(/\D/g, ''), 10);
+                        if (!isNaN(num) && num > 0) {
+                          setCourseForm({ ...courseForm, price: String(num * 1000) });
+                        }
+                      }}
+                      className="absolute right-1.5 top-1/2 -translate-y-1/2 px-1.5 py-0.5 bg-slate-800 hover:bg-slate-750 text-slate-300 text-[10px] font-bold rounded border border-slate-700 cursor-pointer"
+                      title="3 ta nol qo'shish"
+                    >
+                      +000
+                    </button>
+                  </div>
+                </div>
+              </div>
             </div>
 
             <div className="pt-4 flex gap-3">
               <button type="button" onClick={handleCloseModals} className="flex-1 py-2.5 bg-slate-800 hover:bg-slate-750 text-slate-300 font-semibold rounded-lg text-xs cursor-pointer border border-slate-700/50">Bekor qilish</button>
-              <button type="submit" className="flex-1 py-2.5 bg-indigo-650 hover:bg-indigo-500 text-white font-semibold rounded-lg text-xs cursor-pointer shadow shadow-indigo-500/10">Saqlash</button>
+              <button type="submit" className="flex-1 py-2.5 bg-indigo-650 hover:bg-indigo-500 text-white font-semibold rounded-lg text-xs cursor-pointer shadow shadow-indigo-500/10">
+                {editingItem ? "Saqlash" : "Kurs Yaratish"}
+              </button>
             </div>
           </form>
         </div>
       )}
 
-      {/* Modal: Admin CRUD */}
+      {/* Modal: Admin / User CRUD */}
       {showAdminModal && (
         <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
           <form onSubmit={handleAdminSubmit} className="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-4">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <h3 className="font-extrabold text-white text-base">
-                {editingItem ? "Admin Ma'lumotlarini Tahrirlash" : "Yangi Admin Yaratish"}
+                {editingItem ? "Foydalanuvchi Ma'lumotlarini Tahrirlash" : "Yangi Foydalanuvchi / Xodim Yaratish"}
               </h3>
               <button type="button" onClick={handleCloseModals} className="text-slate-400 hover:text-white cursor-pointer"><X size={18} /></button>
             </div>
@@ -1137,6 +1810,22 @@ export default function AdminManagement({ activeSubTab }) {
                 />
               </div>
               <div>
+                <label className="block text-xs font-bold text-slate-400 mb-1">ROL (TIZIMDAGI VAZIFASI)</label>
+                <select
+                  value={adminForm.role}
+                  onChange={(e) => setAdminForm({ ...adminForm, role: e.target.value })}
+                  className="w-full h-10 px-3 bg-slate-850 border border-slate-800 rounded-lg text-slate-200 text-sm focus:outline-none focus:border-indigo-500 font-semibold"
+                >
+                  <option value="ADMIN">ADMIN - Administrator (Tizim boshqaruvi)</option>
+                  <option value="OPERATOR">OPERATOR - CRM Operator (Leadlar va mijozlar)</option>
+                  <option value="CASHIER">CASHIER - Kassir (To'lovlarni qabul qilish)</option>
+                  <option value="ACCOUNTANT">ACCOUNTANT - Hisobchi (Moliya va tariflar)</option>
+                  <option value="BRANCH_ADMIN">BRANCH_ADMIN - Filial Administratori</option>
+                  <option value="MENTOR">MENTOR - O'qituvchi / Mentor</option>
+                  <option value="SUPER_ADMIN">SUPER_ADMIN - Bosh Administrator</option>
+                </select>
+              </div>
+              <div>
                 <label className="block text-xs font-bold text-slate-400 mb-1">PAROL</label>
                 <input
                   type="password"
@@ -1152,7 +1841,7 @@ export default function AdminManagement({ activeSubTab }) {
             <div className="pt-4 flex gap-3">
               <button type="button" onClick={handleCloseModals} className="flex-1 py-2.5 bg-slate-800 hover:bg-slate-750 text-slate-300 font-semibold rounded-lg text-xs cursor-pointer border border-slate-700/50">Bekor qilish</button>
               <button type="submit" className="flex-1 py-2.5 bg-indigo-650 hover:bg-indigo-500 text-white font-semibold rounded-lg text-xs cursor-pointer shadow shadow-indigo-500/10">
-                {editingItem ? "Saqlash" : "Admin Yaratish"}
+                {editingItem ? "Saqlash" : "Foydalanuvchi Yaratish"}
               </button>
             </div>
           </form>
