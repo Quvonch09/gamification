@@ -207,72 +207,77 @@ function AppContent() {
   // 2. Unauthenticated Login Screen
   if (!token || !user) {
     return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4 relative overflow-hidden">
-        {/* Abstract Glowing Background Orbs */}
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 rounded-full bg-indigo-600/10 blur-[120px] pointer-events-none animate-pulse"></div>
-        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 rounded-full bg-cyan-600/10 blur-[120px] pointer-events-none animate-pulse delay-75"></div>
+      <div className="min-h-screen bg-slate-950 flex flex-col justify-between relative overflow-hidden">
+        {/* Top Test Mode Banner */}
+        <TestModeBanner />
 
-        <div className="max-w-md w-full relative z-10 space-y-6">
-          {/* Logo Header */}
-          <div className="text-center space-y-2">
-            <div className="w-16 h-16 rounded-2xl bg-indigo-600 flex items-center justify-center font-black text-2xl text-white shadow-xl shadow-indigo-600/30 mx-auto">
-              S
-            </div>
-            <h1 className="text-3xl font-black tracking-wider text-slate-100">SFERA GAMIFICATION</h1>
-            <p className="text-sm text-slate-400 font-medium">Sfera IT Academy talabalar reytingi nazorati</p>
-          </div>
+        <div className="flex-1 flex items-center justify-center p-4 relative overflow-hidden">
+          {/* Abstract Glowing Background Orbs */}
+          <div className="absolute top-1/4 left-1/4 w-96 h-96 rounded-full bg-indigo-600/10 blur-[120px] pointer-events-none animate-pulse"></div>
+          <div className="absolute bottom-1/4 right-1/4 w-96 h-96 rounded-full bg-cyan-600/10 blur-[120px] pointer-events-none animate-pulse delay-75"></div>
 
-          {/* Login Card */}
-          <div className="bg-slate-900/40 backdrop-blur-xl border border-slate-800 rounded-3xl p-8 shadow-2xl relative">
-            <div className="flex items-center gap-2 mb-6">
-              <LogIn className="text-indigo-400" size={20} />
-              <h2 className="text-lg font-bold text-slate-100">Tizimga Kirish</h2>
+          <div className="max-w-md w-full relative z-10 space-y-6">
+            {/* Logo Header */}
+            <div className="text-center space-y-2">
+              <div className="w-16 h-16 rounded-2xl bg-indigo-600 flex items-center justify-center font-black text-2xl text-white shadow-xl shadow-indigo-600/30 mx-auto">
+                S
+              </div>
+              <h1 className="text-3xl font-black tracking-wider text-slate-100">SFERA GAMIFICATION</h1>
+              <p className="text-sm text-slate-400 font-medium">Sfera IT Academy talabalar reytingi nazorati</p>
             </div>
 
-            {loginError && (
-              <div className="p-3 bg-rose-500/10 border border-rose-500/20 rounded-xl flex items-center gap-2 text-rose-400 text-xs font-semibold mb-6 animate-fadeIn">
-                <ShieldAlert size={16} />
-                <span>{loginError}</span>
-              </div>
-            )}
-
-            <form onSubmit={handleLoginSubmit} className="space-y-4">
-              <div>
-                <label className="block text-xs font-bold text-slate-400 mb-2 uppercase tracking-wide">Foydalanuvchi nomi</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="admin yoki mentor..."
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  className="w-full h-11 px-4 bg-slate-950/60 border border-slate-850 rounded-xl text-slate-200 focus:outline-none focus:border-indigo-500 text-sm font-semibold transition-all"
-                />
+            {/* Login Card */}
+            <div className="bg-slate-900/40 backdrop-blur-xl border border-slate-800 rounded-3xl p-8 shadow-2xl relative">
+              <div className="flex items-center gap-2 mb-6">
+                <LogIn className="text-indigo-400" size={20} />
+                <h2 className="text-lg font-bold text-slate-100">Tizimga Kirish</h2>
               </div>
 
-              <div>
-                <label className="block text-xs font-bold text-slate-400 mb-2 uppercase tracking-wide">Parol</label>
-                <input
-                  type="password"
-                  required
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full h-11 px-4 bg-slate-950/60 border border-slate-850 rounded-xl text-slate-200 focus:outline-none focus:border-indigo-500 text-sm transition-all"
-                />
-              </div>
+              {loginError && (
+                <div className="p-3 bg-rose-500/10 border border-rose-500/20 rounded-xl flex items-center gap-2 text-rose-400 text-xs font-semibold mb-6 animate-fadeIn">
+                  <ShieldAlert size={16} />
+                  <span>{loginError}</span>
+                </div>
+              )}
 
-              <button
-                type="submit"
-                disabled={loginLoading}
-                className="w-full h-11 bg-indigo-600 hover:bg-indigo-500 disabled:bg-indigo-650 text-white font-bold rounded-xl shadow-lg shadow-indigo-600/20 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer mt-6"
-              >
-                {loginLoading ? (
-                  <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-white mr-2"></div>
-                ) : (
-                  <span>Kirish</span>
-                )}
-              </button>
-            </form>
+              <form onSubmit={handleLoginSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-400 mb-2 uppercase tracking-wide">Foydalanuvchi nomi</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="admin yoki mentor..."
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    className="w-full h-11 px-4 bg-slate-950/60 border border-slate-850 rounded-xl text-slate-200 focus:outline-none focus:border-indigo-500 text-sm font-semibold transition-all"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-400 mb-2 uppercase tracking-wide">Parol</label>
+                  <input
+                    type="password"
+                    required
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="w-full h-11 px-4 bg-slate-950/60 border border-slate-850 rounded-xl text-slate-200 focus:outline-none focus:border-indigo-500 text-sm transition-all"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={loginLoading}
+                  className="w-full h-11 bg-indigo-600 hover:bg-indigo-500 disabled:bg-indigo-650 text-white font-bold rounded-xl shadow-lg shadow-indigo-600/20 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer mt-6"
+                >
+                  {loginLoading ? (
+                    <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-white mr-2"></div>
+                  ) : (
+                    <span>Kirish</span>
+                  )}
+                </button>
+              </form>
+            </div>
           </div>
         </div>
       </div>
@@ -333,14 +338,18 @@ function AppContent() {
   };
 
   return (
-    <div className="flex bg-slate-950 text-slate-100 min-h-screen font-sans overflow-hidden">
-      {/* Sidebar Panel */}
-      <Sidebar 
-        currentPage={currentPage} 
-        setCurrentPage={setCurrentPage} 
-        collapsed={sidebarCollapsed} 
-        setCollapsed={setSidebarCollapsed} 
-      />
+    <div className="flex flex-col bg-slate-950 text-slate-100 min-h-screen font-sans overflow-hidden">
+      {/* Top Test Mode Banner for All Roles */}
+      <TestModeBanner />
+
+      <div className="flex flex-1 h-[calc(100vh-34px)] overflow-hidden">
+        {/* Sidebar Panel */}
+        <Sidebar 
+          currentPage={currentPage} 
+          setCurrentPage={setCurrentPage} 
+          collapsed={sidebarCollapsed} 
+          setCollapsed={setSidebarCollapsed} 
+        />
 
       {/* Main Panel Area */}
       <div className="flex-1 flex flex-col h-screen overflow-hidden">
@@ -386,6 +395,7 @@ function AppContent() {
         <main className="flex-1 overflow-y-auto overflow-x-auto bg-slate-950 custom-scrollbar">
           {renderPage()}
         </main>
+        </div>
       </div>
 
       {/* Modal: Quick Award / Tezkor Baholash */}
