@@ -1,0 +1,15 @@
+[build]
+  base = "sfera-gamification-frontend"
+  publish = "dist"
+  command = "npm run build"
+
+[[redirects]]
+  from = "/api/*"
+  to = "http://89.116.30.180:8080/api/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
