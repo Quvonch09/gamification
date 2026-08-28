@@ -23,6 +23,12 @@ public class StudentService {
     @Autowired
     private UserRepository userRepository;
 
+    @Autowired
+    private PointRuleRepository pointRuleRepository;
+
+    @Autowired
+    private GroupRepository groupRepository;
+
     public List<Student> getAllStudents() {
         return studentRepository.findAll();
     }
@@ -219,5 +225,125 @@ public class StudentService {
                 .filter(s -> "ACTIVE".equals(s.getStatus()))
                 .distinct()
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * Resets a student's active points to 0 while preserving 100% of historical transactions.
+     * It adds an adjustment record offsetting current points.
+     */
+    public void resetStudentPoints(Long studentId, String reason, User adminUser) {
+        Long currentXp = pointTransactionRepository.getStudentXp(studentId);
+        if (currentXp == null || currentXp == 0) {
+            return;
+        }
+
+        Student student = studentRepository.findById(studentId).orElse(null);
+        if (student == null) return;
+
+        User author = adminUser;
+        if (author == null) {
+            author = userRepository.findAll().stream()
+                    .filter(u -> "SUPER_ADMIN".equals(u.getRole()))
+                    .findFirst()
+                    .orElseGet(() -> userRepository.findAll().stream().findFirst().orElse(null));
+        }
+        if (author == null) return;
+
+        PointRule resetRule = pointRuleRepository.findByCode("MONTHLY_RESET").orElseGet(() -> {
+            return pointRuleRepository.save(PointRule.builder()
+                    .code("MONTHLY_RESET")
+                    .name("Oylik Reyting Yangilanishi")
+                    .type("NEGATIVE")
+                    .points(0)
+                    .active(true)
+                    .build());
+        });
+
+        PointTransaction resetTx = PointTransaction.builder()
+                .student(student)
+                .mentor(author)
+                .pointRule(resetRule)
+                .points(-currentXp.intValue())
+                .quantity(1)
+                .description(reason != null && !reason.trim().isEmpty() ? reason.trim() : ("Ballar 0 ga tushirildi (Oldingi ball: " + currentXp + " XP arxivlandi)"))
+                .status("ACTIVE")
+                .createdAt(LocalDateTime.now())
+                .build();
+        pointTransactionRepository.save(resetTx);
+    }
+
+    /**
+     * Resets all active students' points to 0 on a scheduled basis or manual trigger.
+     */
+    public void resetAllActiveStudentsPoints(String reason) {
+        User author = userRepository.findAll().stream()
+                .filter(u -> "SUPER_ADMIN".equals(u.getRole()))
+                .findFirst()
+                .orElseGet(() -> userRepository.findAll().stream().findFirst().orElse(null));
+
+        List<Student> active = getActiveStudents();
+        for (Student s : active) {
+            try {
+                resetStudentPoints(s.getId(), reason, author);
+            } catch (Exception e) {
+                System.err.println("Error resetting points for student " + s.getId() + ": " + e.getMessage());
+            }
+        }
+    }
+
+    /**
+     * Bulk deletes (archives) multiple students at once.
+     */
+    public void bulkDeleteStudents(List<Long> studentIds) {
+        if (studentIds == null) return;
+        for (Long id : studentIds) {
+            try {
+                archiveStudent(id);
+            } catch (Exception e) {
+                System.err.println("Error archiving student " + id + ": " + e.getMessage());
+            }
+        }
+    }
+
+    /**
+     * Transfers or assigns a student to a new group, preserving all existing points.
+     */
+    public void changeStudentGroup(Long studentId, Long newGroupId) {
+        Student student = studentRepository.findById(studentId).orElse(null);
+        if (student == null) return;
+
+        Group newGroup = groupRepository.findById(newGroupId).orElse(null);
+        if (newGroup == null) return;
+
+        // Deactivate existing active memberships
+        List<GroupStudent> existing = groupStudentRepository.findByStudentIdAndStatus(studentId, "ACTIVE");
+        for (GroupStudent gs : existing) {
+            gs.setStatus("LEFT");
+            gs.setLeftAt(LocalDateTime.now());
+            groupStudentRepository.save(gs);
+        }
+
+        // Enroll in new group
+        GroupStudent newGs = GroupStudent.builder()
+                .group(newGroup)
+                .student(student)
+                .status("ACTIVE")
+                .joinedAt(LocalDateTime.now())
+                .build();
+        groupStudentRepository.save(newGs);
+    }
+
+    /**
+     * Bulk assigns multiple students to a target group.
+     */
+    public void bulkAssignGroup(List<Long> studentIds, Long targetGroupId) {
+        if (studentIds == null || targetGroupId == null) return;
+        for (Long id : studentIds) {
+            try {
+                changeStudentGroup(id, targetGroupId);
+            } catch (Exception e) {
+                System.err.println("Error moving student " + id + " to group " + targetGroupId + ": " + e.getMessage());
+            }
+        }
     }
 }

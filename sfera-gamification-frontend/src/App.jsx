@@ -19,6 +19,7 @@ import Schedule from './pages/Schedule';
 import Reports from './pages/Reports';
 import CashierDesk from './pages/CashierDesk';
 import Expenses from './pages/Expenses';
+import Profile from './pages/Profile';
 import TestModeBanner from './components/TestModeBanner';
 import { LogIn, ShieldAlert, Award, Star, X, AlertTriangle, Search, Sun, Moon } from 'lucide-react';
 import axios from 'axios';
@@ -333,6 +334,8 @@ function AppContent() {
         return <SferaAi />;
       case 'profile':
         return <StudentProfile studentId={selectedStudentId} setCurrentPage={setCurrentPage} refreshTrigger={refreshTrigger} />;
+      case 'user-profile':
+        return <Profile />;
       default:
         return <Dashboard refreshTrigger={refreshTrigger} />;
     }
@@ -380,14 +383,25 @@ function AppContent() {
               {isDark ? <Sun size={18} /> : <Moon size={18} />}
             </button>
 
-            <div className="text-right">
-              <span className="block text-xs font-semibold text-slate-400">{user.fullName}</span>
-              <span className="inline-block text-[9px] uppercase font-black tracking-wider text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded border border-indigo-500/10 mt-0.5">
-                {user.role}
-              </span>
-            </div>
-            <div className="w-9 h-9 rounded-full bg-slate-800 flex items-center justify-center border border-slate-700/50 text-indigo-400 font-black">
-              {user.fullName.charAt(0)}
+            {/* Header User Card (Clickable to User Profile) */}
+            <div 
+              onClick={() => setCurrentPage('user-profile')} 
+              title="Profilimni ko'rish va tahrirlash" 
+              className="flex items-center gap-3 cursor-pointer group hover:bg-slate-800/40 p-1.5 rounded-xl transition-all"
+            >
+              <div className="text-right">
+                <span className="block text-xs font-semibold text-slate-400 group-hover:text-indigo-300 transition-colors">{user.fullName}</span>
+                <span className="inline-block text-[9px] uppercase font-black tracking-wider text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded border border-indigo-500/10 mt-0.5">
+                  {user.role}
+                </span>
+              </div>
+              {user?.avatarUrl ? (
+                <img src={user.avatarUrl} alt={user.fullName} className="w-9 h-9 rounded-full object-cover border border-indigo-500/40 shadow shrink-0" />
+              ) : (
+                <div className="w-9 h-9 rounded-full bg-slate-800 flex items-center justify-center border border-slate-700/50 text-indigo-400 font-black">
+                  {user.fullName.charAt(0)}
+                </div>
+              )}
             </div>
           </div>
         </header>

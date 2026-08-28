@@ -706,4 +706,82 @@ public class StudentController {
 
         return ResponseEntity.ok(response);
     }
+
+    /**
+     * Resets a single student's points to 0 while archiving all previous points in history.
+     */
+    @PostMapping("/{id}/reset-points")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'BRANCH_ADMIN', 'ADMIN', 'MENTOR')")
+    public ResponseEntity<?> resetStudentPoints(@PathVariable Long id, @RequestBody(required = false) Map<String, String> body, Principal principal) {
+        User adminUser = principal != null ? userRepository.findByUsername(principal.getName()).orElse(null) : null;
+        String reason = body != null ? body.get("reason") : null;
+        studentService.resetStudentPoints(id, reason, adminUser);
+        return ResponseEntity.ok(Map.of("message", "Talabaning ballari 0 ga tushirildi va tarixga arxivlandi!"));
+    }
+
+    /**
+     * Bulk resets points for selected students.
+     */
+    @PostMapping("/bulk-reset-points")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'BRANCH_ADMIN', 'ADMIN')")
+    public ResponseEntity<?> bulkResetPoints(@RequestBody Map<String, Object> body, Principal principal) {
+        User adminUser = principal != null ? userRepository.findByUsername(principal.getName()).orElse(null) : null;
+        List<?> rawIds = (List<?>) body.get("studentIds");
+        String reason = (String) body.get("reason");
+        if (rawIds != null) {
+            for (Object item : rawIds) {
+                try {
+                    Long sId = Long.parseLong(item.toString());
+                    studentService.resetStudentPoints(sId, reason, adminUser);
+                } catch (Exception ignored) {}
+            }
+        }
+        return ResponseEntity.ok(Map.of("message", "Tanlangan talabalarning ballari arxivlandi va 0 ga tushirildi!"));
+    }
+
+    /**
+     * Changes a student's active group while preserving all earned points.
+     */
+    @PostMapping("/{id}/change-group")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'BRANCH_ADMIN', 'ADMIN')")
+    public ResponseEntity<?> changeStudentGroup(@PathVariable Long id, @RequestBody Map<String, Object> body) {
+        Object gIdObj = body.get("groupId");
+        if (gIdObj == null) {
+            return ResponseEntity.badRequest().body("Guruh identifikatori (groupId) talab qilinadi!");
+        }
+        Long newGroupId = Long.parseLong(gIdObj.toString());
+        studentService.changeStudentGroup(id, newGroupId);
+        return ResponseEntity.ok(Map.of("message", "Talaba yangi guruhga muvaffaqiyatli o'tkazildi, ballari saqlandi!"));
+    }
+
+    /**
+     * Bulk deletes (archives) selected students.
+     */
+    @PostMapping("/bulk-delete")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'BRANCH_ADMIN', 'ADMIN')")
+    public ResponseEntity<?> bulkDeleteStudents(@RequestBody Map<String, List<Long>> body) {
+        List<Long> ids = body.get("studentIds");
+        studentService.bulkDeleteStudents(ids);
+        return ResponseEntity.ok(Map.of("message", "Tanlangan talabalar muvaffaqiyatli o'chirildi/arxivlandi!"));
+    }
+
+    /**
+     * Bulk assigns selected students to a target group.
+     */
+    @PostMapping("/bulk-assign-group")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'BRANCH_ADMIN', 'ADMIN')")
+    public ResponseEntity<?> bulkAssignGroup(@RequestBody Map<String, Object> body) {
+        List<?> rawIds = (List<?>) body.get("studentIds");
+        Object gIdObj = body.get("groupId");
+        if (rawIds == null || gIdObj == null) {
+            return ResponseEntity.badRequest().body("studentIds va groupId parametrlari talab qilinadi!");
+        }
+        Long targetGroupId = Long.parseLong(gIdObj.toString());
+        List<Long> studentIds = new ArrayList<>();
+        for (Object item : rawIds) {
+            studentIds.add(Long.parseLong(item.toString()));
+        }
+        studentService.bulkAssignGroup(studentIds, targetGroupId);
+        return ResponseEntity.ok(Map.of("message", "Tanlangan talabalar yangi guruhga muvaffaqiyatli biriktirildi!"));
+    }
 }

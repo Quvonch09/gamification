@@ -39,7 +39,7 @@ export default function Sidebar({ currentPage, setCurrentPage, collapsed, setCol
     { id: 'groups', name: 'Guruhlar', icon: FolderGit, roles: ['SUPER_ADMIN', 'BRANCH_ADMIN', 'MENTOR'] },
     { id: 'courses', name: 'Kurslar', icon: GraduationCap, roles: ['SUPER_ADMIN', 'BRANCH_ADMIN'] },
     { id: 'rooms', name: 'Xonalar', icon: DoorOpen, roles: ['SUPER_ADMIN', 'BRANCH_ADMIN'] },
-    { id: 'lessonplans', name: 'Dars Rejalari', icon: BookOpen, roles: ['SUPER_ADMIN', 'BRANCH_ADMIN', 'MENTOR', 'STUDENT'] },
+    { id: 'lessonplans', name: 'Dars Rejalari', icon: BookOpen, roles: ['SUPER_ADMIN', 'BRANCH_ADMIN', 'MENTOR'] },
     { id: 'mentors', name: 'Xodimlar / Mentorlar', icon: UserCheck, roles: ['SUPER_ADMIN'] },
     { id: 'admins', name: 'Adminlar & Rollar', icon: Shield, roles: ['SUPER_ADMIN'] }
   ].filter(i => i.roles.includes(userRole));
@@ -56,7 +56,7 @@ export default function Sidebar({ currentPage, setCurrentPage, collapsed, setCol
 
   const mainItems = [
     { id: 'dashboard', name: 'Boshqaruv Paneli', icon: LayoutDashboard, roles: ['SUPER_ADMIN', 'BRANCH_ADMIN', 'MENTOR', 'STUDENT'] },
-    { id: 'schedule', name: 'Dars Jadvali', icon: CalendarDays, roles: ['SUPER_ADMIN', 'BRANCH_ADMIN', 'MENTOR', 'STUDENT'] },
+    { id: 'schedule', name: 'Dars Jadvali', icon: CalendarDays, roles: ['SUPER_ADMIN', 'BRANCH_ADMIN', 'MENTOR'] },
     { id: 'leads', name: 'Lidlar (CRM)', icon: UserCheck, roles: ['SUPER_ADMIN', 'BRANCH_ADMIN', 'OPERATOR'] }
   ].filter(i => i.roles.includes(userRole));
 
@@ -73,7 +73,8 @@ export default function Sidebar({ currentPage, setCurrentPage, collapsed, setCol
   ].filter(i => i.roles.includes(userRole));
 
   const systemItems = [
-    { id: 'audit-logs', name: 'Audit Qaydlari', icon: ScrollText, roles: ['SUPER_ADMIN'] }
+    { id: 'audit-logs', name: 'Audit Qaydlari', icon: ScrollText, roles: ['SUPER_ADMIN'] },
+    { id: 'user-profile', name: 'Mening Profilim', icon: User, roles: ['SUPER_ADMIN', 'BRANCH_ADMIN', 'MENTOR', 'CASHIER', 'ACCOUNTANT', 'OPERATOR', 'STUDENT'] }
   ].filter(i => i.roles.includes(userRole));
 
   return (
@@ -109,13 +110,21 @@ export default function Sidebar({ currentPage, setCurrentPage, collapsed, setCol
         </div>
 
         {/* User Card */}
-        <div className={`p-4 border-b border-slate-800/50 flex items-center gap-3 overflow-hidden shrink-0 ${collapsed ? 'justify-center' : ''}`}>
-          <div className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center border border-indigo-500/30 text-indigo-400 font-bold shrink-0">
-            {user?.fullName?.charAt(0) || 'U'}
-          </div>
+        <div 
+          onClick={() => setCurrentPage('user-profile')}
+          title="Profilimni ko'rish va tahrirlash"
+          className={`p-3 mx-2 my-2 rounded-xl border border-slate-800/50 hover:border-indigo-500/40 hover:bg-slate-800/40 cursor-pointer flex items-center gap-3 overflow-hidden shrink-0 transition-all ${collapsed ? 'justify-center mx-1' : ''}`}
+        >
+          {user?.avatarUrl ? (
+            <img src={user.avatarUrl} alt={user.fullName} className="w-10 h-10 rounded-full object-cover border border-indigo-500/40 shadow shrink-0" />
+          ) : (
+            <div className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center border border-indigo-500/30 text-indigo-400 font-bold shrink-0">
+              {user?.fullName?.charAt(0) || 'U'}
+            </div>
+          )}
           {!collapsed && (
             <div className="min-w-0">
-              <p className="font-semibold text-sm text-slate-100 truncate">{user?.fullName}</p>
+              <p className="font-semibold text-sm text-slate-100 truncate hover:text-indigo-300 transition-colors">{user?.fullName}</p>
               <span className="inline-block text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 mt-0.5">
                 {user?.role}
               </span>

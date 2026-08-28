@@ -36,6 +36,12 @@ public class AuthController {
     @Autowired
     private JwtUtils jwtUtils;
 
+    @Autowired
+    private org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private com.sfera.gamification.repository.StudentRepository studentRepository;
+
     @PostMapping("/login")
     public ResponseEntity<?> authenticateUser(@RequestBody LoginRequest loginRequest) {
         Authentication authentication = authenticationManager.authenticate(
@@ -70,6 +76,8 @@ public class AuthController {
         map.put("username", user.getUsername());
         map.put("fullName", user.getFullName());
         map.put("role", user.getRole());
+        map.put("phone", user.getPhone());
+        map.put("avatarUrl", user.getAvatarUrl());
 
         // If student, include studentId and groupId for frontend dashboard/leaderboard
         if ("STUDENT".equals(user.getRole()) && user.getStudent() != null) {
@@ -82,6 +90,61 @@ public class AuthController {
                 map.put("groupName", groups.get(0).getGroup().getName());
             }
         }
+
+        return ResponseEntity.ok(map);
+    }
+
+    @PutMapping("/profile")
+    public ResponseEntity<?> updateProfile(@RequestBody Map<String, String> request, Principal principal) {
+        if (principal == null) {
+            return ResponseEntity.status(401).body("Unauthorized");
+        }
+        User user = userRepository.findByUsername(principal.getName()).orElse(null);
+        if (user == null) {
+            return ResponseEntity.status(404).body("User not found");
+        }
+
+        String fullName = request.get("fullName");
+        String phone = request.get("phone");
+        String avatarUrl = request.get("avatarUrl");
+        String password = request.get("password");
+
+        if (fullName != null && !fullName.trim().isEmpty()) {
+            user.setFullName(fullName.trim());
+        }
+        if (phone != null) {
+            user.setPhone(phone.trim());
+        }
+        if (avatarUrl != null) {
+            user.setAvatarUrl(avatarUrl);
+        }
+        if (password != null && !password.trim().isEmpty()) {
+            user.setPassword(passwordEncoder.encode(password.trim()));
+        }
+
+        // If user is a student, sync fullName and phone to student entity as well
+        if ("STUDENT".equals(user.getRole()) && user.getStudent() != null) {
+            com.sfera.gamification.entity.Student student = user.getStudent();
+            if (fullName != null && !fullName.trim().isEmpty()) {
+                String[] parts = fullName.trim().split("\\s+", 2);
+                student.setFirstName(parts[0]);
+                student.setLastName(parts.length > 1 ? parts[1] : "");
+            }
+            if (phone != null) {
+                student.setPhone(phone.trim());
+            }
+            studentRepository.save(student);
+        }
+
+        userRepository.save(user);
+
+        Map<String, Object> map = new HashMap<>();
+        map.put("id", user.getId());
+        map.put("username", user.getUsername());
+        map.put("fullName", user.getFullName());
+        map.put("role", user.getRole());
+        map.put("phone", user.getPhone());
+        map.put("avatarUrl", user.getAvatarUrl());
 
         return ResponseEntity.ok(map);
     }

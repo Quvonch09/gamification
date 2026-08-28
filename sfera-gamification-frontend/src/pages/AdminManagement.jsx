@@ -20,7 +20,12 @@ import {
   Calendar,
   Phone,
   User,
-  CheckCircle2
+  CheckCircle2,
+  RotateCcw,
+  ArrowRightLeft,
+  FolderGit,
+  CheckSquare,
+  Square
 } from 'lucide-react';
 import MentorMonitor from './MentorMonitor';
 import { useAuth } from '../context/AuthContext';
@@ -60,6 +65,18 @@ export default function AdminManagement({ activeSubTab }) {
   const [showMentorModal, setShowMentorModal] = useState(false);
   const [showCourseModal, setShowCourseModal] = useState(false);
   const [showAdminModal, setShowAdminModal] = useState(false);
+
+  // Bulk & Student Actions state
+  const [selectedStudentIds, setSelectedStudentIds] = useState([]);
+  const [showTransferGroupModal, setShowTransferGroupModal] = useState(false);
+  const [transferTargetStudent, setTransferTargetStudent] = useState(null); // null means BULK
+  const [targetGroupId, setTargetGroupId] = useState('');
+  
+  const [showResetPointsModal, setShowResetPointsModal] = useState(false);
+  const [resetPointsTargetStudent, setResetPointsTargetStudent] = useState(null); // null means BULK
+  const [resetReason, setResetReason] = useState('');
+
+  const [showBulkDeleteConfirmModal, setShowBulkDeleteConfirmModal] = useState(false);
 
   // Edit states
   const [editingItem, setEditingItem] = useState(null);
@@ -567,6 +584,97 @@ export default function AdminManagement({ activeSubTab }) {
       });
   };
 
+  // ---- Bulk & Single Action Handlers ----
+  const toggleSelectAllStudents = () => {
+    if (selectedStudentIds.length === filteredStudents.length && filteredStudents.length > 0) {
+      setSelectedStudentIds([]);
+    } else {
+      setSelectedStudentIds(filteredStudents.map(s => s.id));
+    }
+  };
+
+  const toggleSelectStudent = (id) => {
+    if (selectedStudentIds.includes(id)) {
+      setSelectedStudentIds(selectedStudentIds.filter(item => item !== id));
+    } else {
+      setSelectedStudentIds([...selectedStudentIds, id]);
+    }
+  };
+
+  const openTransferGroup = (student = null) => {
+    setTransferTargetStudent(student);
+    setTargetGroupId(student?.groupId ? String(student.groupId) : '');
+    setShowTransferGroupModal(true);
+  };
+
+  const handleTransferGroupSubmit = (e) => {
+    e.preventDefault();
+    if (!targetGroupId) return;
+
+    if (transferTargetStudent) {
+      axios.post(`/api/students/${transferTargetStudent.id}/change-group`, { groupId: targetGroupId })
+        .then(() => {
+          setSuccessMessage("Talabaning guruhi muvaffaqiyatli almashtirildi!");
+          setShowTransferGroupModal(false);
+          loadAllData();
+          setTimeout(() => setSuccessMessage(''), 3000);
+        })
+        .catch(err => setErrorMessage(err.response?.data?.message || err.response?.data || "Guruhni almashtirishda xatolik!"));
+    } else {
+      axios.post('/api/students/bulk-assign-group', { studentIds: selectedStudentIds, groupId: targetGroupId })
+        .then(() => {
+          setSuccessMessage(`${selectedStudentIds.length} ta talaba guruhga muvaffaqiyatli biriktirildi!`);
+          setShowTransferGroupModal(false);
+          setSelectedStudentIds([]);
+          loadAllData();
+          setTimeout(() => setSuccessMessage(''), 3000);
+        })
+        .catch(err => setErrorMessage(err.response?.data?.message || err.response?.data || "Ommaviy biriktirishda xatolik!"));
+    }
+  };
+
+  const openResetPoints = (student = null) => {
+    setResetPointsTargetStudent(student);
+    setResetReason('');
+    setShowResetPointsModal(true);
+  };
+
+  const handleResetPointsSubmit = (e) => {
+    e.preventDefault();
+    if (resetPointsTargetStudent) {
+      axios.post(`/api/students/${resetPointsTargetStudent.id}/reset-points`, { reason: resetReason })
+        .then(() => {
+          setSuccessMessage("Talabaning ballari arxivlandi va 0 ga tushirildi!");
+          setShowResetPointsModal(false);
+          loadAllData();
+          setTimeout(() => setSuccessMessage(''), 3000);
+        })
+        .catch(err => setErrorMessage(err.response?.data?.message || err.response?.data || "Ballarni nollashda xatolik!"));
+    } else {
+      axios.post('/api/students/bulk-reset-points', { studentIds: selectedStudentIds, reason: resetReason })
+        .then(() => {
+          setSuccessMessage(`${selectedStudentIds.length} ta talabaning ballari arxivlandi va 0 ga tushirildi!`);
+          setShowResetPointsModal(false);
+          setSelectedStudentIds([]);
+          loadAllData();
+          setTimeout(() => setSuccessMessage(''), 3000);
+        })
+        .catch(err => setErrorMessage(err.response?.data?.message || err.response?.data || "Ommaviy ballarni nollashda xatolik!"));
+    }
+  };
+
+  const handleBulkDeleteSubmit = () => {
+    axios.post('/api/students/bulk-delete', { studentIds: selectedStudentIds })
+      .then(() => {
+        setSuccessMessage(`${selectedStudentIds.length} ta talaba muvaffaqiyatli o'chirildi!`);
+        setShowBulkDeleteConfirmModal(false);
+        setSelectedStudentIds([]);
+        loadAllData();
+        setTimeout(() => setSuccessMessage(''), 3000);
+      })
+      .catch(err => setErrorMessage(err.response?.data?.message || err.response?.data || "Ommaviy o'chirishda xatolik!"));
+  };
+
   // ---- Filtered lists ----
   const filteredStudents = students.filter(s => {
     if (!studentSearch.trim()) return true;
@@ -745,10 +853,74 @@ export default function AdminManagement({ activeSubTab }) {
                   )}
                 </div>
               </div>
+
+              {/* Bulk Action Floating Bar */}
+              {selectedStudentIds.length > 0 && (
+                <div className="bg-gradient-to-r from-indigo-900/90 to-slate-900 border border-indigo-500/40 rounded-2xl p-3 px-5 mx-4 mb-4 flex flex-wrap items-center justify-between gap-3 shadow-2xl animate-fadeIn">
+                  <div className="flex items-center gap-3">
+                    <span className="px-3 py-1 bg-indigo-600 text-white font-black text-xs rounded-full shadow">
+                      {selectedStudentIds.length} ta o'quvchi tanlandi
+                    </span>
+                    <span className="text-xs text-slate-300 font-medium hidden sm:inline">
+                      Tanlangan o'quvchilar ustida ommaviy amal bajaring:
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <button
+                      type="button"
+                      onClick={() => openTransferGroup(null)}
+                      className="flex items-center gap-1.5 px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl text-xs shadow-md shadow-indigo-600/20 cursor-pointer border-0"
+                    >
+                      <FolderGit size={14} /> Guruhga biriktirish
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => openResetPoints(null)}
+                      className="flex items-center gap-1.5 px-3.5 py-1.5 bg-amber-600 hover:bg-amber-500 text-white font-bold rounded-xl text-xs shadow-md shadow-amber-600/20 cursor-pointer border-0"
+                    >
+                      <RotateCcw size={14} /> Ballarni 0 ga tushirish
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setShowBulkDeleteConfirmModal(true)}
+                      className="flex items-center gap-1.5 px-3.5 py-1.5 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-xl text-xs shadow-md shadow-rose-600/20 cursor-pointer border-0"
+                    >
+                      <Trash2 size={14} /> Tanlanganlarni o'chirish
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setSelectedStudentIds([])}
+                      className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-semibold cursor-pointer border border-slate-700/50"
+                    >
+                      Bekor qilish
+                    </button>
+                  </div>
+                </div>
+              )}
+
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
                   <thead>
                     <tr className="border-b border-slate-800 bg-slate-950/40 text-[10px] font-bold text-slate-400 tracking-wider uppercase">
+                      {canManage && (
+                        <th className="py-4 px-4 text-center w-10">
+                          <button
+                            type="button"
+                            onClick={toggleSelectAllStudents}
+                            className="text-slate-400 hover:text-indigo-400 cursor-pointer border-0 bg-transparent flex items-center justify-center"
+                          >
+                            {selectedStudentIds.length > 0 && selectedStudentIds.length === filteredStudents.length ? (
+                              <CheckSquare size={17} className="text-indigo-400" />
+                            ) : (
+                              <Square size={17} />
+                            )}
+                          </button>
+                        </th>
+                      )}
                       <th className="py-4 px-6">TALABA</th>
                       <th className="py-4 px-6">TELEFONLAR</th>
                       <th className="py-4 px-6">GURUH</th>
@@ -759,13 +931,28 @@ export default function AdminManagement({ activeSubTab }) {
                   </thead>
                   <tbody className="divide-y divide-slate-800/60 text-slate-300 text-sm">
                     {filteredStudents.length === 0 ? (
-                      <tr><td colSpan={canManage ? 6 : 5} className="py-10 text-center text-slate-500">
+                      <tr><td colSpan={canManage ? 7 : 5} className="py-10 text-center text-slate-500">
                         <Search size={32} className="mx-auto mb-2 opacity-30" />
                         {studentSearch ? `"${studentSearch}" bo'yicha natija topilmadi` : "O'quvchilar yo'q"}
                       </td></tr>
                     ) : (
                       filteredStudents.map(s => (
-                        <tr key={s.id} className="hover:bg-slate-850/20 transition-all">
+                        <tr key={s.id} className={`hover:bg-slate-850/20 transition-all ${selectedStudentIds.includes(s.id) ? 'bg-indigo-950/20' : ''}`}>
+                          {canManage && (
+                            <td className="py-4 px-4 text-center">
+                              <button
+                                type="button"
+                                onClick={() => toggleSelectStudent(s.id)}
+                                className="text-slate-400 hover:text-indigo-400 cursor-pointer border-0 bg-transparent flex items-center justify-center"
+                              >
+                                {selectedStudentIds.includes(s.id) ? (
+                                  <CheckSquare size={17} className="text-indigo-400" />
+                                ) : (
+                                  <Square size={17} />
+                                )}
+                              </button>
+                            </td>
+                          )}
                           <td className="py-4 px-6 font-bold text-slate-100">{s.fullName}</td>
                           <td className="py-4 px-6 text-xs text-slate-400">
                             <div>{s.phone || '—'}</div>
@@ -818,11 +1005,33 @@ export default function AdminManagement({ activeSubTab }) {
                           </td>
                           {canManage && (
                             <td className="py-4 px-6">
-                              <div className="flex items-center justify-center gap-2">
-                                <button onClick={() => openEditStudent(s)} className="w-8 h-8 rounded-lg bg-slate-800 hover:bg-indigo-650 text-slate-400 hover:text-white flex items-center justify-center cursor-pointer transition-colors border border-slate-700/50">
+                              <div className="flex items-center justify-center gap-1.5">
+                                <button 
+                                  onClick={() => openEditStudent(s)} 
+                                  title="Tahrirlash"
+                                  className="w-8 h-8 rounded-lg bg-slate-800 hover:bg-indigo-650 text-slate-400 hover:text-white flex items-center justify-center cursor-pointer transition-colors border border-slate-700/50"
+                                >
                                   <Edit3 size={13} />
                                 </button>
-                                <button onClick={() => handleArchiveStudent(s.id)} className="w-8 h-8 rounded-lg bg-slate-800 hover:bg-rose-600/15 border border-slate-700/50 hover:border-rose-500/25 text-slate-400 hover:text-rose-400 flex items-center justify-center cursor-pointer transition-colors">
+                                <button 
+                                  onClick={() => openTransferGroup(s)} 
+                                  title="Guruhni almashtirish (Ballari saqlanadi)"
+                                  className="w-8 h-8 rounded-lg bg-slate-800 hover:bg-cyan-600/30 hover:border-cyan-500/50 text-slate-400 hover:text-cyan-300 flex items-center justify-center cursor-pointer transition-colors border border-slate-700/50"
+                                >
+                                  <ArrowRightLeft size={13} />
+                                </button>
+                                <button 
+                                  onClick={() => openResetPoints(s)} 
+                                  title="Ballarni 0 ga tushirish (Tarixda saqlanadi)"
+                                  className="w-8 h-8 rounded-lg bg-slate-800 hover:bg-amber-600/30 hover:border-amber-500/50 text-slate-400 hover:text-amber-300 flex items-center justify-center cursor-pointer transition-colors border border-slate-700/50"
+                                >
+                                  <RotateCcw size={13} />
+                                </button>
+                                <button 
+                                  onClick={() => handleArchiveStudent(s.id)} 
+                                  title="O'chirish / Arxivlash"
+                                  className="w-8 h-8 rounded-lg bg-slate-800 hover:bg-rose-600/15 border border-slate-700/50 hover:border-rose-500/25 text-slate-400 hover:text-rose-400 flex items-center justify-center cursor-pointer transition-colors"
+                                >
                                   <Archive size={13} />
                                 </button>
                               </div>
@@ -1926,6 +2135,150 @@ export default function AdminManagement({ activeSubTab }) {
                 className="flex-1 py-2.5 bg-rose-650 hover:bg-rose-600 text-white font-semibold rounded-lg text-xs cursor-pointer shadow shadow-rose-500/10"
               >
                 Tasdiqlash
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Change Group (Single & Bulk) */}
+      {showTransferGroupModal && (
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-[110] p-4 animate-fadeIn">
+          <form onSubmit={handleTransferGroupSubmit} className="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div className="flex items-center gap-2 text-cyan-400">
+                <FolderGit size={20} />
+                <h3 className="font-extrabold text-white text-base">
+                  {transferTargetStudent 
+                    ? `${transferTargetStudent.fullName} uchun Guruhni Almashtirish`
+                    : `${selectedStudentIds.length} ta Talabani Guruhga Biriktirish`
+                  }
+                </h3>
+              </div>
+              <button type="button" onClick={() => setShowTransferGroupModal(false)} className="text-slate-400 hover:text-white cursor-pointer border-0 bg-transparent">
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div className="p-3 bg-indigo-500/10 border border-indigo-500/20 rounded-xl text-xs text-indigo-300 leading-relaxed font-medium">
+                💡 <strong>Eslatma:</strong> Talaba yangi guruhga o'tkazilganda, uning to'plagan barcha ballari (XP), yutuqlari va baholari <strong>to'liq saqlanib qoladi</strong>!
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-400 mb-2 uppercase tracking-wider">Yangi Guruhni Tanlang</label>
+                <CustomSelect
+                  value={targetGroupId}
+                  onChange={(val) => setTargetGroupId(val)}
+                  options={groups.map(g => ({ value: g.id, label: `${g.name} (${g.courseName || 'Kurs'})` }))}
+                  placeholder="Guruhni tanlang..."
+                  className="w-full"
+                />
+              </div>
+            </div>
+
+            <div className="pt-4 flex gap-3">
+              <button 
+                type="button" 
+                onClick={() => setShowTransferGroupModal(false)} 
+                className="flex-1 py-2.5 bg-slate-800 hover:bg-slate-750 text-slate-300 font-semibold rounded-lg text-xs cursor-pointer border border-slate-700/50"
+              >
+                Bekor qilish
+              </button>
+              <button 
+                type="submit" 
+                disabled={!targetGroupId}
+                className="flex-1 py-2.5 bg-cyan-600 hover:bg-cyan-500 disabled:opacity-50 text-white font-bold rounded-lg text-xs cursor-pointer shadow shadow-cyan-500/10 border-0"
+              >
+                Guruhga o'tkazish
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* Modal: Reset Points (Single & Bulk) */}
+      {showResetPointsModal && (
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-[110] p-4 animate-fadeIn">
+          <form onSubmit={handleResetPointsSubmit} className="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div className="flex items-center gap-2 text-amber-500">
+                <RotateCcw size={20} />
+                <h3 className="font-extrabold text-white text-base">
+                  {resetPointsTargetStudent 
+                    ? `${resetPointsTargetStudent.fullName} Ballarini 0 ga Tushirish`
+                    : `${selectedStudentIds.length} ta Talaba Ballarini 0 ga Tushirish`
+                  }
+                </h3>
+              </div>
+              <button type="button" onClick={() => setShowResetPointsModal(false)} className="text-slate-400 hover:text-white cursor-pointer border-0 bg-transparent">
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl text-xs text-amber-300 leading-relaxed font-medium">
+                ⚠️ <strong>Diqqat:</strong> Talabaning joriy balansi <strong>0 XP</strong> ga tushiriladi. Avvalgi barcha ballar va sabablar talabaning "Ballar Tarixi"da <strong>100% saqlanib qoladi</strong> va oylik arxiv sifatida ko'rinadi.
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-400 mb-2 uppercase tracking-wider">Sabab / Izoh (Ixtiyoriy)</label>
+                <input
+                  type="text"
+                  placeholder="Masalan: Yangi oy uchun ballar nollashtirildi..."
+                  value={resetReason}
+                  onChange={e => setResetReason(e.target.value)}
+                  className="w-full h-11 px-4 bg-slate-950/60 border border-slate-800 rounded-xl text-slate-200 focus:outline-none focus:border-indigo-500 text-sm font-semibold"
+                />
+              </div>
+            </div>
+
+            <div className="pt-4 flex gap-3">
+              <button 
+                type="button" 
+                onClick={() => setShowResetPointsModal(false)} 
+                className="flex-1 py-2.5 bg-slate-800 hover:bg-slate-750 text-slate-300 font-semibold rounded-lg text-xs cursor-pointer border border-slate-700/50"
+              >
+                Bekor qilish
+              </button>
+              <button 
+                type="submit" 
+                className="flex-1 py-2.5 bg-amber-600 hover:bg-amber-500 text-white font-bold rounded-lg text-xs cursor-pointer shadow shadow-amber-500/10 border-0"
+              >
+                Ballarni 0 ga tushirish
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* Modal: Bulk Delete Confirmation */}
+      {showBulkDeleteConfirmModal && (
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-[110] p-4 animate-fadeIn">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-sm w-full shadow-2xl space-y-4">
+            <div className="flex items-center gap-3 text-rose-500">
+              <div className="p-2 bg-rose-500/10 rounded-lg">
+                <AlertTriangle size={20} />
+              </div>
+              <h3 className="font-extrabold text-white text-base">Ommaviy O'chirish</h3>
+            </div>
+            <p className="text-slate-300 text-xs font-semibold leading-relaxed">
+              Tanlangan <strong>{selectedStudentIds.length} ta</strong> talabani tizimdan o'chirish/arxivlashni tasdiqlaysizmi?
+            </p>
+            <div className="flex gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setShowBulkDeleteConfirmModal(false)}
+                className="flex-1 py-2.5 bg-slate-800 hover:bg-slate-750 text-slate-300 font-semibold rounded-lg text-xs cursor-pointer border border-slate-700/50"
+              >
+                Bekor qilish
+              </button>
+              <button
+                type="button"
+                onClick={handleBulkDeleteSubmit}
+                className="flex-1 py-2.5 bg-rose-600 hover:bg-rose-500 text-white font-semibold rounded-lg text-xs cursor-pointer shadow shadow-rose-500/10 border-0"
+              >
+                Ha, o'chirilsin
               </button>
             </div>
           </div>

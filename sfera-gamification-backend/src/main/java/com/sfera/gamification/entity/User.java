@@ -35,6 +35,12 @@ public class User {
     @JoinColumn(name = "branch_id")
     private Branch branch;
 
+    @Column(name = "phone")
+    private String phone;
+
+    @Column(name = "avatar_url", columnDefinition = "TEXT")
+    private String avatarUrl;
+
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 }

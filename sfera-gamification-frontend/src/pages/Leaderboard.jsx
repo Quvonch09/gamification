@@ -8,7 +8,9 @@ import {
   Medal,
   ChevronRight,
   TrendingUp,
-  ChevronDown
+  ChevronDown,
+  Users,
+  Globe
 } from 'lucide-react';
 import { useData } from '../context/DataContext';
 import { useAuth } from '../context/AuthContext';
@@ -20,10 +22,12 @@ export default function Leaderboard({ setCurrentPage, setSelectedStudentId, refr
   const [leaderboard, setLeaderboard] = useState([]);
   const { groups, courses, mentors } = useData();
 
+  // Rating scope: 'GROUP' (Guruh reytingi) or 'ALL' (Markaz umumiy reytingi)
+  const [ratingScope, setRatingScope] = useState('GROUP');
+
   // Filter states
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedGroup, setSelectedGroup] = useState(() => {
-    // For students, default to their group
     return user?.groupId ? String(user.groupId) : '';
   });
   const [selectedCourse, setSelectedCourse] = useState('');
@@ -32,21 +36,31 @@ export default function Leaderboard({ setCurrentPage, setSelectedStudentId, refr
 
   // When user object is loaded (async), update groupId for student
   useEffect(() => {
-    if (isStudent && user?.groupId && !selectedGroup) {
+    if (isStudent && user?.groupId) {
       setSelectedGroup(String(user.groupId));
     }
   }, [user?.groupId]);
 
   useEffect(() => {
     fetchLeaderboard();
-  }, [selectedGroup, selectedCourse, selectedMentor, refreshTrigger]);
+  }, [ratingScope, selectedGroup, selectedCourse, selectedMentor, refreshTrigger]);
 
   const fetchLeaderboard = () => {
     setLoading(true);
     let params = {};
-    if (selectedGroup) params.groupId = selectedGroup;
-    if (selectedCourse) params.courseId = selectedCourse;
-    if (selectedMentor) params.mentorId = selectedMentor;
+
+    if (ratingScope === 'GROUP') {
+      if (isStudent && user?.groupId) {
+        params.groupId = user.groupId;
+      } else if (selectedGroup) {
+        params.groupId = selectedGroup;
+      } else if (groups.length > 0 && !isStudent) {
+        params.groupId = groups[0].id;
+      }
+    } else {
+      if (selectedCourse) params.courseId = selectedCourse;
+      if (selectedMentor) params.mentorId = selectedMentor;
+    }
 
     axios.get('/api/students/leaderboard', { params })
       .then(res => {
@@ -76,95 +90,97 @@ export default function Leaderboard({ setCurrentPage, setSelectedStudentId, refr
   };
 
   return (
-    <div className="p-6 space-y-8 overflow-y-auto max-h-[calc(100vh-4rem)]">
-      {/* Page Header */}
-      <div>
-        <h1 className="text-3xl font-extrabold tracking-tight text-white flex items-center gap-2">
-          <Trophy className="text-amber-400" />
-          {isStudent ? "Guruh Reytingi" : "Leaderboard"}
-        </h1>
-        <p className="text-sm text-slate-400 mt-1 font-medium">
-          {isStudent
-            ? `${user?.groupName || 'Guruh'} bo'yicha reyting`
-            : "Barcha o'quvchilar umumiy reytingi va ballari"
-          }
-        </p>
+    <div className="p-6 space-y-6 overflow-y-auto max-h-[calc(100vh-4rem)] custom-scrollbar">
+      {/* Page Header with 2-Tier Rating Tabs */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-extrabold tracking-tight text-white flex items-center gap-2">
+            <Trophy className="text-amber-400" />
+            {ratingScope === 'GROUP' ? "Guruh Reytingi" : "Markaz Umumiy Reytingi"}
+          </h1>
+          <p className="text-sm text-slate-400 mt-1 font-medium">
+            {ratingScope === 'GROUP' 
+              ? (isStudent ? `${user?.groupName || 'Guruh'} a'zolari o'rtasidagi reyting` : "Tanlangan guruh o'quvchilari reytingi")
+              : "Sfera IT Academy barcha guruhlari va talabalari bo'yicha umumiy reyting"
+            }
+          </p>
+        </div>
+
+        {/* 2-Tier Rating Scope Switcher */}
+        <div className="flex bg-slate-900 border border-slate-800 p-1 rounded-2xl shadow-xl">
+          <button
+            onClick={() => setRatingScope('GROUP')}
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-extrabold text-xs sm:text-sm transition-all cursor-pointer ${
+              ratingScope === 'GROUP'
+                ? 'bg-gradient-to-r from-indigo-600 to-indigo-700 text-white shadow-lg shadow-indigo-600/30'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-850'
+            }`}
+          >
+            <Users size={16} />
+            <span>Guruh Reytingi {isStudent && user?.groupName ? `(${user.groupName})` : ''}</span>
+          </button>
+
+          <button
+            onClick={() => setRatingScope('ALL')}
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-extrabold text-xs sm:text-sm transition-all cursor-pointer ${
+              ratingScope === 'ALL'
+                ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow-lg shadow-amber-500/30'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-850'
+            }`}
+          >
+            <Globe size={16} />
+            <span>Markaz Umumiy Reytingi</span>
+          </button>
+        </div>
       </div>
 
-      {/* Filter and Search Bar — hidden for students */}
-      {!isStudent && (
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 flex flex-col lg:flex-row gap-4 items-stretch lg:items-center">
-          {/* Search */}
-          <div className="relative flex-1">
-            <input
-              type="text"
-              placeholder="O'quvchini ismi orqali qidirish..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full h-10 pl-10 pr-4 bg-slate-850 border border-slate-800 rounded-xl text-slate-200 focus:outline-none focus:border-indigo-500 text-sm font-semibold"
-            />
-            <Search size={16} className="absolute left-3.5 top-3 text-slate-400" />
-          </div>
+      {/* Filter and Search Bar */}
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex flex-col lg:flex-row gap-3 items-stretch lg:items-center shadow-lg">
+        {/* Search */}
+        <div className="relative flex-1">
+          <input
+            type="text"
+            placeholder="O'quvchini ismi bo'yicha qidirish..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full h-10 pl-10 pr-4 bg-slate-950/60 border border-slate-800 rounded-xl text-slate-200 focus:outline-none focus:border-indigo-500 text-sm font-semibold"
+          />
+          <Search size={16} className="absolute left-3.5 top-3 text-slate-400" />
+        </div>
 
-          {/* Dropdown Filters */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 flex-1 lg:flex-none">
-            {/* Group */}
+        {/* Filters depending on scope */}
+        {ratingScope === 'GROUP' && !isStudent && (
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-bold text-slate-400 uppercase whitespace-nowrap">Guruh:</span>
             <CustomSelect
-              value={selectedGroup}
-              onChange={(val) => {
-                setSelectedGroup(val);
-                setSelectedCourse('');
-                setSelectedMentor('');
-              }}
+              value={selectedGroup || (groups[0]?.id ? String(groups[0].id) : '')}
+              onChange={(val) => setSelectedGroup(val)}
               options={groups.map(g => ({ value: g.id, label: g.name }))}
-              placeholder="Barcha guruhlar"
-              className="w-full sm:w-44"
+              placeholder="Guruhni tanlang"
+              className="w-full sm:w-56"
             />
+          </div>
+        )}
 
-            {/* Course */}
+        {ratingScope === 'ALL' && !isStudent && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 flex-1 lg:flex-none">
             <CustomSelect
               value={selectedCourse}
-              onChange={(val) => {
-                setSelectedCourse(val);
-                setSelectedGroup('');
-                setSelectedMentor('');
-              }}
+              onChange={(val) => setSelectedCourse(val)}
               options={courses.map(c => ({ value: c.id, label: c.name }))}
               placeholder="Barcha kurslar"
               className="w-full sm:w-44"
             />
-
-            {/* Mentor */}
             <CustomSelect
               value={selectedMentor}
-              onChange={(val) => {
-                setSelectedMentor(val);
-                setSelectedGroup('');
-                setSelectedCourse('');
-              }}
+              onChange={(val) => setSelectedMentor(val)}
               options={mentors.map(m => ({ value: m.id, label: m.fullName }))}
               placeholder="Barcha mentorlar"
               className="w-full sm:w-44"
             />
           </div>
-        </div>
-      )}
-
-      {/* Student search bar only */}
-      {isStudent && (
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4">
-          <div className="relative">
-            <input
-              type="text"
-              placeholder="Guruhda ismi orqali qidirish..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full h-10 pl-10 pr-4 bg-slate-850 border border-slate-800 rounded-xl text-slate-200 focus:outline-none focus:border-indigo-500 text-sm font-semibold"
-            />
-            <Search size={16} className="absolute left-3.5 top-3 text-slate-400" />
-          </div>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* Podium for TOP 3 */}
       {!loading && podium.length > 0 && (
