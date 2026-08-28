@@ -19,6 +19,7 @@ import Schedule from './pages/Schedule';
 import Reports from './pages/Reports';
 import CashierDesk from './pages/CashierDesk';
 import Expenses from './pages/Expenses';
+import TestModeBanner from './components/TestModeBanner';
 import { LogIn, ShieldAlert, Award, Star, X, AlertTriangle, Search, Sun, Moon } from 'lucide-react';
 import axios from 'axios';
 import CustomSelect from './components/CustomSelect';
