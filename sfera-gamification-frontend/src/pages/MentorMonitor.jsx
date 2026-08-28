@@ -110,7 +110,7 @@ export default function MentorMonitor() {
                   ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' 
                   : 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20'
               }`}>
-                {m.fullName.charAt(0)}
+                {m.fullName?.charAt(0) || 'M'}
               </div>
               <div>
                 <h4 className="font-bold text-slate-200 text-sm leading-tight">{m.fullName}</h4>

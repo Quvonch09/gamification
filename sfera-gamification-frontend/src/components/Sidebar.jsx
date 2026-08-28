@@ -20,7 +20,8 @@ import {
   ScrollText,
   GraduationCap,
   ChevronDown,
-  CircleDot
+  CircleDot,
+  User
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 

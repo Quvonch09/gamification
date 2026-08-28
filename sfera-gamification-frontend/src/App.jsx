@@ -390,16 +390,18 @@ function AppContent() {
               className="flex items-center gap-3 cursor-pointer group hover:bg-slate-800/40 p-1.5 rounded-xl transition-all"
             >
               <div className="text-right">
-                <span className="block text-xs font-semibold text-slate-400 group-hover:text-indigo-300 transition-colors">{user.fullName}</span>
+                <span className="block text-xs font-semibold text-slate-400 group-hover:text-indigo-300 transition-colors">
+                  {user?.fullName || user?.username || 'Foydalanuvchi'}
+                </span>
                 <span className="inline-block text-[9px] uppercase font-black tracking-wider text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded border border-indigo-500/10 mt-0.5">
-                  {user.role}
+                  {user?.role || 'FOYDALANUVCHI'}
                 </span>
               </div>
               {user?.avatarUrl ? (
-                <img src={user.avatarUrl} alt={user.fullName} className="w-9 h-9 rounded-full object-cover border border-indigo-500/40 shadow shrink-0" />
+                <img src={user.avatarUrl} alt={user?.fullName || 'User'} className="w-9 h-9 rounded-full object-cover border border-indigo-500/40 shadow shrink-0" />
               ) : (
                 <div className="w-9 h-9 rounded-full bg-slate-800 flex items-center justify-center border border-slate-700/50 text-indigo-400 font-black">
-                  {user.fullName.charAt(0)}
+                  {user?.fullName?.charAt(0) || user?.username?.charAt(0) || 'U'}
                 </div>
               )}
             </div>
