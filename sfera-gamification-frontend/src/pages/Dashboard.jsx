@@ -16,9 +16,15 @@ import {
   CalendarDays
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import AdminDashboard from './AdminDashboard';
 
-export default function Dashboard({ refreshTrigger }) {
+export default function Dashboard({ refreshTrigger, setCurrentPage }) {
   const { user } = useAuth();
+
+  if (user?.role === 'ADMIN' || user?.role === 'BRANCH_ADMIN') {
+    return <AdminDashboard setCurrentPage={setCurrentPage} refreshTrigger={refreshTrigger} />;
+  }
+
   const isStudent = user?.role === 'STUDENT';
 
   const [stats, setStats] = useState(null);

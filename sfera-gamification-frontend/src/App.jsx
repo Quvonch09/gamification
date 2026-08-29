@@ -383,7 +383,7 @@ function AppContent() {
         if (user?.role === 'ADMIN' || user?.role === 'BRANCH_ADMIN') {
           return <AdminDashboard setCurrentPage={setCurrentPage} refreshTrigger={refreshTrigger} />;
         }
-        return <Dashboard refreshTrigger={refreshTrigger} />;
+        return <Dashboard setCurrentPage={setCurrentPage} refreshTrigger={refreshTrigger} />;
     }
   };
 
