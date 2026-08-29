@@ -22,6 +22,7 @@ import Expenses from './pages/Expenses';
 import Profile from './pages/Profile';
 import Notifications from './pages/Notifications';
 import DebtorsList from './pages/DebtorsList';
+import AdminDashboard from './pages/AdminDashboard';
 import TestModeBanner from './components/TestModeBanner';
 import { LogIn, ShieldAlert, Award, Star, X, AlertTriangle, Search, Sun, Moon, Bell } from 'lucide-react';
 import axios from 'axios';
@@ -375,7 +376,13 @@ function AppContent() {
         return <Notifications onNotificationUpdated={fetchUnreadNotifications} />;
       case 'debtors':
         return <DebtorsList setCurrentPage={setCurrentPage} />;
+      case 'admin-dashboard':
+        return <AdminDashboard setCurrentPage={setCurrentPage} refreshTrigger={refreshTrigger} />;
+      case 'dashboard':
       default:
+        if (user?.role === 'ADMIN' || user?.role === 'BRANCH_ADMIN') {
+          return <AdminDashboard setCurrentPage={setCurrentPage} refreshTrigger={refreshTrigger} />;
+        }
         return <Dashboard refreshTrigger={refreshTrigger} />;
     }
   };
