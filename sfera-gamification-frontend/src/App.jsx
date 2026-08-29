@@ -20,8 +20,10 @@ import Reports from './pages/Reports';
 import CashierDesk from './pages/CashierDesk';
 import Expenses from './pages/Expenses';
 import Profile from './pages/Profile';
+import Notifications from './pages/Notifications';
+import DebtorsList from './pages/DebtorsList';
 import TestModeBanner from './components/TestModeBanner';
-import { LogIn, ShieldAlert, Award, Star, X, AlertTriangle, Search, Sun, Moon } from 'lucide-react';
+import { LogIn, ShieldAlert, Award, Star, X, AlertTriangle, Search, Sun, Moon, Bell } from 'lucide-react';
 import axios from 'axios';
 import CustomSelect from './components/CustomSelect';
 
@@ -31,6 +33,39 @@ function AppContent() {
   const [currentPage, setCurrentPage] = useState('dashboard');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [selectedStudentId, setSelectedStudentId] = useState(null);
+
+  // Notifications State
+  const [unreadNotificationsCount, setUnreadNotificationsCount] = useState(0);
+  const [toastNotification, setToastNotification] = useState(null);
+
+  const fetchUnreadNotifications = async () => {
+    if (!token) return;
+    try {
+      const res = await axios.get('/api/notifications/unread-count');
+      const count = res.data?.unreadCount || 0;
+      setUnreadNotificationsCount(prev => {
+        if (count > prev && prev !== 0) {
+          // New notification arrived - show top-right toast!
+          axios.get('/api/notifications').then(listRes => {
+            const latest = (listRes.data || [])[0];
+            if (latest && !latest.read) {
+              setToastNotification(latest);
+              setTimeout(() => setToastNotification(null), 8000);
+            }
+          }).catch(() => {});
+        }
+        return count;
+      });
+    } catch (e) {}
+  };
+
+  useEffect(() => {
+    if (token) {
+      fetchUnreadNotifications();
+      const timer = setInterval(fetchUnreadNotifications, 20000);
+      return () => clearInterval(timer);
+    }
+  }, [token]);
 
   // Automatically force Operator to Leads and Cashier to CashierDesk
   useEffect(() => {
@@ -336,6 +371,10 @@ function AppContent() {
         return <StudentProfile studentId={selectedStudentId} setCurrentPage={setCurrentPage} refreshTrigger={refreshTrigger} />;
       case 'user-profile':
         return <Profile />;
+      case 'notifications':
+        return <Notifications onNotificationUpdated={fetchUnreadNotifications} />;
+      case 'debtors':
+        return <DebtorsList setCurrentPage={setCurrentPage} />;
       default:
         return <Dashboard refreshTrigger={refreshTrigger} />;
     }
@@ -383,6 +422,20 @@ function AppContent() {
               {isDark ? <Sun size={18} /> : <Moon size={18} />}
             </button>
 
+            {/* Notification Bell Button */}
+            <button
+              onClick={() => setCurrentPage('notifications')}
+              title="Bildirishnomalar"
+              className="relative w-9 h-9 rounded-xl bg-slate-800 border border-slate-700/50 flex items-center justify-center text-slate-400 hover:text-indigo-400 hover:bg-slate-700 cursor-pointer transition-all"
+            >
+              <Bell size={18} />
+              {unreadNotificationsCount > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-rose-500 text-[10px] font-black text-white flex items-center justify-center shadow-lg shadow-rose-500/50 animate-pulse">
+                  {unreadNotificationsCount > 99 ? '99+' : unreadNotificationsCount}
+                </span>
+              )}
+            </button>
+
             {/* Header User Card (Clickable to User Profile) */}
             <div 
               onClick={() => setCurrentPage('user-profile')} 
@@ -407,6 +460,37 @@ function AppContent() {
             </div>
           </div>
         </header>
+
+        {/* Top-Right Toast Notification Popup */}
+        {toastNotification && (
+          <div 
+            onClick={() => {
+              setCurrentPage('notifications');
+              setToastNotification(null);
+            }}
+            className="fixed top-12 right-6 z-[200] max-w-sm w-full bg-slate-900/95 border-2 border-indigo-500/60 rounded-2xl p-4 shadow-2xl backdrop-blur-md cursor-pointer animate-fadeIn flex items-start gap-3 transition-all hover:scale-[1.02] shadow-indigo-500/20"
+          >
+            <div className="w-9 h-9 rounded-xl bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 flex items-center justify-center shrink-0">
+              <Bell size={18} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center justify-between gap-1">
+                <h4 className="text-xs font-bold text-white truncate">{toastNotification.title}</h4>
+                <button 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setToastNotification(null);
+                  }} 
+                  className="text-slate-400 hover:text-white p-0.5"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+              <p className="text-[11px] text-slate-300 line-clamp-2 mt-0.5 font-medium">{toastNotification.message}</p>
+              <span className="text-[10px] text-indigo-400 font-bold block mt-1">Ko'rish uchun bosing →</span>
+            </div>
+          </div>
+        )}
 
         {/* Dynamic Inner Page Content */}
         <main className="flex-1 overflow-y-auto overflow-x-auto bg-slate-950 custom-scrollbar">

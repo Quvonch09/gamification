@@ -118,7 +118,11 @@ public class AuthController {
         if (avatarUrl != null) {
             user.setAvatarUrl(avatarUrl);
         }
+        boolean canChangePassword = "SUPER_ADMIN".equals(user.getRole()) || "BRANCH_ADMIN".equals(user.getRole()) || "ADMIN".equals(user.getRole());
         if (password != null && !password.trim().isEmpty()) {
+            if (!canChangePassword) {
+                return ResponseEntity.status(403).body("Parolni faqat Super Admin va Administrator o'zgartira oladi");
+            }
             user.setPassword(passwordEncoder.encode(password.trim()));
         }
 

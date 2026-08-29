@@ -34,6 +34,9 @@ public class LessonService {
     @Autowired
     private StudentRepository studentRepository;
 
+    @Autowired
+    private NotificationService notificationService;
+
     @Transactional
     public Lesson saveLessonJournal(Long groupId, LocalDate date, String username, List<LessonRecordDto> records) {
         Group group = groupRepository.findById(groupId).orElseThrow(() -> new IllegalArgumentException("Group not found"));
@@ -78,6 +81,12 @@ public class LessonService {
             if (attRule != null) {
                 studentTotalPoints += attRule.getPoints();
                 createTransaction(student, lesson, mentor, attRule, attRule.getPoints(), 1, attRule.getName());
+            }
+
+            if (!present) {
+                try {
+                    notificationService.notifyAbsentStudent(student, group, dto.attendanceStatus(), dto.attendanceNote());
+                } catch (Exception ignored) {}
             }
 
             // Only record homework, projects, Q&A, and activity if student was present

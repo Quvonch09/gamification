@@ -292,44 +292,46 @@ export default function Profile() {
               </div>
             </div>
 
-            {/* Password Change Section */}
-            <div className="pt-4 border-t border-slate-800/80 space-y-4">
-              <h3 className="text-base font-bold text-slate-200 flex items-center gap-2">
-                <Lock size={16} className="text-amber-400" />
-                Parolni Yangilash (Ixtiyoriy)
-              </h3>
-              <p className="text-xs text-slate-500">
-                Agar parolni o'zgartirmoqchi bo'lsangiz, yangi parolni kiriting. Bo'sh qoldirsangiz amaldagi parol o'zgarmaydi.
-              </p>
+            {/* Password Change Section (Faqat SUPER_ADMIN va BRANCH_ADMIN / ADMINISTRATOR uchun) */}
+            {(user?.role === 'SUPER_ADMIN' || user?.role === 'BRANCH_ADMIN' || user?.role === 'ADMIN') && (
+              <div className="pt-4 border-t border-slate-800/80 space-y-4">
+                <h3 className="text-base font-bold text-slate-200 flex items-center gap-2">
+                  <Lock size={16} className="text-amber-400" />
+                  Parolni Yangilash (Ixtiyoriy)
+                </h3>
+                <p className="text-xs text-slate-500">
+                  Agar parolni o'zgartirmoqchi bo'lsangiz, yangi parolni kiriting. Bo'sh qoldirsangiz amaldagi parol o'zgarmaydi.
+                </p>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
-                    Yangi Parol
-                  </label>
-                  <input
-                    type="password"
-                    value={formData.password}
-                    onChange={e => setFormData({ ...formData, password: e.target.value })}
-                    placeholder="••••••••"
-                    className="w-full h-11 px-4 bg-slate-950/60 border border-slate-800 rounded-xl text-slate-200 focus:outline-none focus:border-indigo-500 text-sm transition-all"
-                  />
-                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
+                      Yangi Parol
+                    </label>
+                    <input
+                      type="password"
+                      value={formData.password}
+                      onChange={e => setFormData({ ...formData, password: e.target.value })}
+                      placeholder="••••••••"
+                      className="w-full h-11 px-4 bg-slate-950/60 border border-slate-800 rounded-xl text-slate-200 focus:outline-none focus:border-indigo-500 text-sm transition-all"
+                    />
+                  </div>
 
-                <div>
-                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
-                    Parolni Tasdiqlash
-                  </label>
-                  <input
-                    type="password"
-                    value={formData.confirmPassword}
-                    onChange={e => setFormData({ ...formData, confirmPassword: e.target.value })}
-                    placeholder="••••••••"
-                    className="w-full h-11 px-4 bg-slate-950/60 border border-slate-800 rounded-xl text-slate-200 focus:outline-none focus:border-indigo-500 text-sm transition-all"
-                  />
+                  <div>
+                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
+                      Parolni Tasdiqlash
+                    </label>
+                    <input
+                      type="password"
+                      value={formData.confirmPassword}
+                      onChange={e => setFormData({ ...formData, confirmPassword: e.target.value })}
+                      placeholder="••••••••"
+                      className="w-full h-11 px-4 bg-slate-950/60 border border-slate-800 rounded-xl text-slate-200 focus:outline-none focus:border-indigo-500 text-sm transition-all"
+                    />
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
 
             {/* Action Buttons */}
             <div className="pt-4 flex justify-end gap-3 border-t border-slate-800">

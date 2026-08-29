@@ -24,6 +24,9 @@ public class FinanceService {
     @Autowired
     private AuditService auditService;
 
+    @Autowired
+    private NotificationService notificationService;
+
     // Price Plans
     public List<PricePlan> getAllPricePlans() {
         return pricePlanRepository.findAll();
@@ -136,6 +139,15 @@ public class FinanceService {
                 "Paid: " + newPaid + " (" + invoice.getStatus() + ")",
                 actor
         );
+
+        try {
+            Student student = invoice.getEnrollment() != null ? invoice.getEnrollment().getStudent() : null;
+            String groupName = null;
+            if (invoice.getEnrollment() != null && invoice.getEnrollment().getGroup() != null) {
+                groupName = invoice.getEnrollment().getGroup().getName();
+            }
+            notificationService.notifyPaymentReceived(payment, actor, student, groupName);
+        } catch (Exception ignored) {}
 
         return payment;
     }

@@ -21,7 +21,9 @@ import {
   GraduationCap,
   ChevronDown,
   CircleDot,
-  User
+  User,
+  Bell,
+  AlertCircle
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -41,15 +43,15 @@ export default function Sidebar({ currentPage, setCurrentPage, collapsed, setCol
     { id: 'courses', name: 'Kurslar', icon: GraduationCap, roles: ['SUPER_ADMIN', 'BRANCH_ADMIN'] },
     { id: 'rooms', name: 'Xonalar', icon: DoorOpen, roles: ['SUPER_ADMIN', 'BRANCH_ADMIN'] },
     { id: 'lessonplans', name: 'Dars Rejalari', icon: BookOpen, roles: ['SUPER_ADMIN', 'BRANCH_ADMIN', 'MENTOR'] },
-    { id: 'mentors', name: 'Xodimlar / Mentorlar', icon: UserCheck, roles: ['SUPER_ADMIN'] },
+    { id: 'mentors', name: 'Xodimlar / Mentorlar', icon: UserCheck, roles: ['SUPER_ADMIN', 'BRANCH_ADMIN'] },
     { id: 'admins', name: 'Adminlar & Rollar', icon: Shield, roles: ['SUPER_ADMIN'] }
   ].filter(i => i.roles.includes(userRole));
 
   const financeSubItems = [
-    { id: 'cashier', name: 'Kassa (To\'lovlar)', icon: Landmark, roles: ['SUPER_ADMIN', 'CASHIER'] },
+    { id: 'cashier', name: 'Kassa (To\'lovlar)', icon: Landmark, roles: ['SUPER_ADMIN', 'BRANCH_ADMIN', 'CASHIER'] },
     { id: 'expenses', name: 'Xarajatlar', icon: ScrollText, roles: ['SUPER_ADMIN', 'ACCOUNTANT'] },
-    { id: 'finance', name: 'Narxlar va Tariflar', icon: Landmark, roles: ['SUPER_ADMIN', 'BRANCH_ADMIN', 'ACCOUNTANT'] },
-    { id: 'reports', name: 'Moliya Hisobotlari', icon: FileSpreadsheet, roles: ['SUPER_ADMIN', 'BRANCH_ADMIN', 'ACCOUNTANT'] }
+    { id: 'finance', name: 'Narxlar va Tariflar', icon: Landmark, roles: ['SUPER_ADMIN', 'ACCOUNTANT'] },
+    { id: 'reports', name: 'Moliya Hisobotlari', icon: FileSpreadsheet, roles: ['SUPER_ADMIN', 'ACCOUNTANT'] }
   ].filter(i => i.roles.includes(userRole));
 
   const isAcademicActive = academicSubItems.some(i => i.id === currentPage);
@@ -62,10 +64,11 @@ export default function Sidebar({ currentPage, setCurrentPage, collapsed, setCol
   ].filter(i => i.roles.includes(userRole));
 
   const studentSectionItems = [
-    { id: 'journal', name: 'Baholar Jurnali', icon: BookOpen, roles: ['BRANCH_ADMIN', 'MENTOR'] }, // Removed for SUPER_ADMIN as requested
+    { id: 'journal', name: 'Baholar Jurnali', icon: BookOpen, roles: ['BRANCH_ADMIN', 'MENTOR'] },
     { id: 'davomat', name: 'Davomat', icon: CalendarCheck, roles: ['SUPER_ADMIN', 'BRANCH_ADMIN', 'MENTOR', 'STUDENT'] },
     { id: 'leaderboard', name: 'Reyting (Top)', icon: Trophy, roles: ['SUPER_ADMIN', 'BRANCH_ADMIN', 'MENTOR', 'STUDENT'] },
-    { id: 'students', name: 'O\'quvchilar Ro\'yxati', icon: Users, roles: ['SUPER_ADMIN', 'BRANCH_ADMIN', 'MENTOR'] }
+    { id: 'students', name: 'O\'quvchilar Ro\'yxati', icon: Users, roles: ['SUPER_ADMIN', 'BRANCH_ADMIN', 'MENTOR'] },
+    { id: 'debtors', name: 'Qarzdorlik Nazorati', icon: AlertCircle, roles: ['SUPER_ADMIN', 'BRANCH_ADMIN', 'CASHIER'] }
   ].filter(i => i.roles.includes(userRole));
 
   const gamificationItems = [
@@ -75,6 +78,7 @@ export default function Sidebar({ currentPage, setCurrentPage, collapsed, setCol
 
   const systemItems = [
     { id: 'audit-logs', name: 'Audit Qaydlari', icon: ScrollText, roles: ['SUPER_ADMIN'] },
+    { id: 'notifications', name: 'Bildirishnomalar', icon: Bell, roles: ['SUPER_ADMIN', 'BRANCH_ADMIN', 'MENTOR', 'CASHIER', 'ACCOUNTANT', 'OPERATOR', 'STUDENT'] },
     { id: 'user-profile', name: 'Mening Profilim', icon: User, roles: ['SUPER_ADMIN', 'BRANCH_ADMIN', 'MENTOR', 'CASHIER', 'ACCOUNTANT', 'OPERATOR', 'STUDENT'] }
   ].filter(i => i.roles.includes(userRole));
 

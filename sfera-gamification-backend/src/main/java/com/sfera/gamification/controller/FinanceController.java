@@ -129,7 +129,52 @@ public class FinanceController {
         if (principal == null) {
             return ResponseEntity.status(401).body("Unauthorized");
         }
-        return ResponseEntity.ok(financeService.getAllPayments());
+        List<Payment> list = financeService.getAllPayments();
+        List<Map<String, Object>> result = new ArrayList<>();
+        for (Payment p : list) {
+            Map<String, Object> m = new HashMap<>();
+            m.put("id", p.getId());
+            m.put("amount", p.getAmount());
+            m.put("paymentMethod", p.getPaymentMethod());
+            m.put("notes", p.getNotes());
+            m.put("createdAt", p.getCreatedAt() != null ? p.getCreatedAt().toString() : null);
+            m.put("paymentDate", p.getCreatedAt() != null ? p.getCreatedAt().toString() : null);
+            m.put("receiptNo", "REC-" + p.getId() + (p.getId() * 7 % 900 + 100));
+
+            // Who collected payment
+            if (p.getReceivedBy() != null) {
+                m.put("receivedById", p.getReceivedBy().getId());
+                m.put("receivedByName", p.getReceivedBy().getFullName());
+                m.put("receivedByRole", p.getReceivedBy().getRole());
+            } else {
+                m.put("receivedByName", "Kassa Admin");
+                m.put("receivedByRole", "CASHIER");
+            }
+
+            // Student & Group info
+            if (p.getInvoice() != null && p.getInvoice().getEnrollment() != null) {
+                Student s = p.getInvoice().getEnrollment().getStudent();
+                if (s != null) {
+                    m.put("studentId", s.getId());
+                    m.put("studentName", s.getFirstName() + " " + s.getLastName());
+                    m.put("studentPhone", s.getPhone());
+                }
+                Group g = p.getInvoice().getEnrollment().getGroup();
+                if (g != null) {
+                    m.put("groupId", g.getId());
+                    m.put("groupName", g.getName());
+                }
+            }
+            result.add(m);
+        }
+        result.sort((a, b) -> {
+            String da = (String) a.get("createdAt");
+            String db = (String) b.get("createdAt");
+            if (da == null) return 1;
+            if (db == null) return -1;
+            return db.compareTo(da);
+        });
+        return ResponseEntity.ok(result);
     }
 
     @GetMapping("/payments/student/{studentId}")

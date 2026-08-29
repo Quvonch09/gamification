@@ -52,6 +52,10 @@ export default function CashierDesk({ refreshTrigger }) {
   const [studentSearch, setStudentSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL'); // ALL | DEBTOR | PAID | PARTIALLY_PAID
 
+  // History Tab Filters
+  const [historySearch, setHistorySearch] = useState('');
+  const [historyMethodFilter, setHistoryMethodFilter] = useState('ALL');
+
   useEffect(() => {
     loadData();
   }, [refreshTrigger]);
@@ -59,34 +63,41 @@ export default function CashierDesk({ refreshTrigger }) {
   const loadData = async () => {
     setLoading(true);
     try {
-      const [studentsRes, invoicesRes] = await Promise.all([
+      const [studentsRes, invoicesRes, paymentsRes] = await Promise.all([
         axios.get('/api/students'),
-        axios.get('/api/finance/invoices').catch(() => ({ data: [] }))
+        axios.get('/api/finance/invoices').catch(() => ({ data: [] })),
+        axios.get('/api/finance/payments').catch(() => ({ data: [] }))
       ]);
 
       const stdList = studentsRes.data || [];
       const invList = invoicesRes.data || [];
+      const payList = paymentsRes.data || [];
 
       setStudents(stdList);
       setInvoices(invList);
 
-      // Extract all payments from invoices
-      const allPayments = [];
-      invList.forEach(inv => {
-        if (inv.payments && Array.isArray(inv.payments)) {
-          inv.payments.forEach(p => {
-            allPayments.push({
-              ...p,
-              studentName: inv.studentName,
-              groupName: inv.groupName,
-              invoiceId: inv.id
+      if (payList.length > 0) {
+        setPayments(payList);
+      } else {
+        // Fallback: extract all payments from invoices if /payments is empty
+        const allPayments = [];
+        invList.forEach(inv => {
+          if (inv.payments && Array.isArray(inv.payments)) {
+            inv.payments.forEach(p => {
+              allPayments.push({
+                ...p,
+                studentName: inv.studentName,
+                groupName: inv.groupName,
+                invoiceId: inv.id,
+                receivedByName: p.receivedBy ? p.receivedBy.fullName : 'Kassa Admin',
+                paymentDate: p.createdAt || p.paymentDate
+              });
             });
-          });
-        }
-      });
-      // Sort payments latest first
-      allPayments.sort((a, b) => new Date(b.paymentDate || 0) - new Date(a.paymentDate || 0));
-      setPayments(allPayments);
+          }
+        });
+        allPayments.sort((a, b) => new Date(b.paymentDate || 0) - new Date(a.paymentDate || 0));
+        setPayments(allPayments);
+      }
     } catch (err) {
       console.error("Error loading cashier data", err);
     } finally {
@@ -295,6 +306,18 @@ export default function CashierDesk({ refreshTrigger }) {
           >
             <Users className="w-3.5 h-3.5" />
             <span>O'quvchilar To'lovlari</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('HISTORY')}
+            className={`px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+              activeTab === 'HISTORY'
+                ? 'bg-emerald-600 text-white shadow-md'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <Clock className="w-3.5 h-3.5" />
+            <span>To'lovlar Tarixi</span>
           </button>
 
           <button
@@ -814,6 +837,141 @@ export default function CashierDesk({ refreshTrigger }) {
                     </tr>
                   ))
                 )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* --- TAB 3: PAYMENT HISTORY (KIM, QACHON, KIMDAN, QANCHA OLDI) --- */}
+      {activeTab === 'HISTORY' && (
+        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-2xl space-y-4">
+          <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
+            <div>
+              <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                <Clock className="w-5 h-5 text-emerald-400" />
+                To'lovlar Tarixi va Qabul Qiluvchilar Nazorati
+              </h2>
+              <p className="text-xs text-slate-400 mt-0.5">
+                Kim qachon, kimdan va qancha to'lov qabul qilgani to'g'risidagi to'liq saqlangan hisobot
+              </p>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="relative w-full sm:w-64">
+                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+                <input
+                  type="text"
+                  placeholder="Talaba, kassir yoki kvitansiya..."
+                  value={historySearch}
+                  onChange={e => setHistorySearch(e.target.value)}
+                  className="w-full h-9 pl-9 pr-3 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:border-emerald-500 font-semibold"
+                />
+              </div>
+
+              <select
+                value={historyMethodFilter}
+                onChange={e => setHistoryMethodFilter(e.target.value)}
+                className="h-9 px-3 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-300 focus:outline-none focus:border-emerald-500 cursor-pointer font-semibold"
+              >
+                <option value="ALL">Barcha Usullar</option>
+                <option value="CASH">Naqd</option>
+                <option value="CARD">Karta</option>
+                <option value="BANK">Bank</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="overflow-x-auto border border-slate-800 rounded-xl">
+            <table className="w-full text-left text-xs text-slate-300">
+              <thead className="bg-slate-950/80 border-b border-slate-800 text-[10px] uppercase tracking-wider font-extrabold text-slate-400">
+                <tr>
+                  <th className="py-3 px-4">#</th>
+                  <th className="py-3 px-4">Sana va Vaqt</th>
+                  <th className="py-3 px-4">Kvitansiya №</th>
+                  <th className="py-3 px-4">Kimdan (Talaba)</th>
+                  <th className="py-3 px-4">Guruhi</th>
+                  <th className="py-3 px-4">Summa</th>
+                  <th className="py-3 px-4">Usuli</th>
+                  <th className="py-3 px-4">Kim Qabul Qildi</th>
+                  <th className="py-3 px-4">Izoh</th>
+                  <th className="py-3 px-4 text-right">Chek</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-800/60 font-medium">
+                {payments
+                  .filter(p => {
+                    const q = historySearch.toLowerCase();
+                    const matchQ = 
+                      (p.studentName || '').toLowerCase().includes(q) ||
+                      (p.receivedByName || '').toLowerCase().includes(q) ||
+                      (p.receiptNo || '').toLowerCase().includes(q) ||
+                      (p.notes || '').toLowerCase().includes(q);
+                    if (!matchQ) return false;
+                    if (historyMethodFilter !== 'ALL') {
+                      const m = p.paymentMethod || p.method;
+                      if (m !== historyMethodFilter) return false;
+                    }
+                    return true;
+                  })
+                  .map((p, idx) => (
+                    <tr key={p.id || idx} className="hover:bg-slate-800/30 transition-colors">
+                      <td className="py-3 px-4 font-mono text-slate-500">{idx + 1}</td>
+                      <td className="py-3 px-4 font-mono text-slate-300">
+                        {p.paymentDate ? new Date(p.paymentDate).toLocaleString() : (p.createdAt ? new Date(p.createdAt).toLocaleString() : '-')}
+                      </td>
+                      <td className="py-3 px-4 font-mono font-bold text-amber-400">
+                        {p.receiptNo || `REC-${p.id || idx}`}
+                      </td>
+                      <td className="py-3 px-4 font-bold text-white">
+                        {p.studentName || "Noma'lum"}
+                      </td>
+                      <td className="py-3 px-4">
+                        <span className="px-2 py-0.5 rounded bg-slate-950 border border-slate-800 text-indigo-300 text-[11px] font-bold">
+                          {p.groupName || "-"}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4 font-mono font-bold text-emerald-400 text-sm">
+                        +{Number(p.amount || 0).toLocaleString()} UZS
+                      </td>
+                      <td className="py-3 px-4">
+                        <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-slate-950 border border-slate-800 text-slate-300">
+                          {p.paymentMethod || p.method || 'CASH'}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4">
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-bold text-slate-200">{p.receivedByName || "Kassa Admin"}</span>
+                          {p.receivedByRole && (
+                            <span className="text-[9px] uppercase px-1.5 py-0.2 rounded bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 font-bold">
+                              {p.receivedByRole}
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="py-3 px-4 text-slate-400 text-[11px] max-w-[150px] truncate">
+                        {p.notes || "-"}
+                      </td>
+                      <td className="py-3 px-4 text-right">
+                        <button
+                          onClick={() => setReceiptModal({
+                            receiptNo: p.receiptNo || `REC-${p.id || idx}`,
+                            date: p.paymentDate ? new Date(p.paymentDate).toLocaleDateString() : new Date().toLocaleDateString(),
+                            studentName: p.studentName || 'Talaba',
+                            groupName: p.groupName || '-',
+                            method: p.paymentMethod || p.method || 'CASH',
+                            cashierName: p.receivedByName || 'Kassa Admin',
+                            notes: p.notes,
+                            amount: Number(p.amount || 0)
+                          })}
+                          title="Kvitansiyani ko'rish va chop etish"
+                          className="w-8 h-8 rounded-lg bg-slate-950 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800 flex items-center justify-center transition-all cursor-pointer"
+                        >
+                          <Printer size={13} />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
               </tbody>
             </table>
           </div>
