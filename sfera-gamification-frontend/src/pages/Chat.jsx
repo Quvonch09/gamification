@@ -22,7 +22,8 @@ import {
   ChevronRight,
   Sparkles,
   Info,
-  Trash2
+  Trash2,
+  AlertTriangle
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -50,6 +51,15 @@ export default function Chat({ setCurrentPage }) {
   const [groupTitle, setGroupTitle] = useState('');
   const [selectedGroupMembers, setSelectedGroupMembers] = useState([]);
   const [creatingChat, setCreatingChat] = useState(false);
+
+  // Custom Delete Confirm Modal State
+  const [deleteConfirmModal, setDeleteConfirmModal] = useState({
+    isOpen: false,
+    type: null, // 'MESSAGE' or 'ROOM'
+    targetId: null,
+    title: '',
+    message: ''
+  });
 
   const messagesEndRef = useRef(null);
 
@@ -208,29 +218,49 @@ export default function Chat({ setCurrentPage }) {
     );
   };
 
-  const handleDeleteMessage = async (msgId) => {
-    if (!window.confirm("Ushbu xabarni o'chirmoqchimisiz?")) return;
-    try {
-      await axios.delete(`/api/chat/messages/${msgId}`);
-      setMessages(prev => prev.filter(m => m.id !== msgId));
-    } catch (err) {
-      console.error("Delete message error", err);
-      alert(err.response?.data || "Xabarni o'chirishda xatolik yuz berdi");
-    }
+  const requestDeleteMessage = (msgId) => {
+    setDeleteConfirmModal({
+      isOpen: true,
+      type: 'MESSAGE',
+      targetId: msgId,
+      title: "Xabarni o'chirish",
+      message: "Ushbu xabarni o'chirib tashlamoqchimisiz? Bu amalni ortga qaytarib bo'lmaydi."
+    });
   };
 
-  const handleDeleteRoom = async (roomId) => {
-    if (!window.confirm("Diqqat! Ushbu chat va undagi barcha xabarlar o'chiriladi. Ishonchingiz komilmi?")) return;
-    try {
-      await axios.delete(`/api/chat/rooms/${roomId}`);
-      if (activeRoom?.id === roomId) {
-        setActiveRoom(null);
+  const requestDeleteRoom = (roomId) => {
+    setDeleteConfirmModal({
+      isOpen: true,
+      type: 'ROOM',
+      targetId: roomId,
+      title: "Chatni o'chirish",
+      message: "Diqqat! Ushbu chat xonasi va undagi barcha xabarlar o'chiriladi. Ishonchingiz komilmi?"
+    });
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteConfirmModal.targetId) return;
+    const { type, targetId } = deleteConfirmModal;
+    setDeleteConfirmModal(prev => ({ ...prev, isOpen: false }));
+
+    if (type === 'MESSAGE') {
+      try {
+        await axios.delete(`/api/chat/messages/${targetId}`);
+        setMessages(prev => prev.filter(m => m.id !== targetId));
+      } catch (err) {
+        console.error("Delete message error", err);
       }
-      loadRooms();
-      if (isAdmin) loadAdminRooms();
-    } catch (err) {
-      console.error("Delete room error", err);
-      alert(err.response?.data || "Chatni o'chirishda xatolik yuz berdi");
+    } else if (type === 'ROOM') {
+      try {
+        await axios.delete(`/api/chat/rooms/${targetId}`);
+        if (activeRoom?.id === targetId) {
+          setActiveRoom(null);
+        }
+        loadRooms();
+        if (isAdmin) loadAdminRooms();
+      } catch (err) {
+        console.error("Delete room error", err);
+      }
     }
   };
 
@@ -489,7 +519,7 @@ export default function Chat({ setCurrentPage }) {
                   </span>
 
                   <button
-                    onClick={() => handleDeleteRoom(activeRoom.id)}
+                    onClick={() => requestDeleteRoom(activeRoom.id)}
                     className="p-1.5 text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 border border-slate-800 hover:border-rose-500/30 rounded-xl transition-all cursor-pointer"
                     title="Chatni va barcha xabarlarni o'chirish"
                   >
@@ -556,7 +586,7 @@ export default function Chat({ setCurrentPage }) {
                                 
                                 {(isMe || isAdmin) && (
                                   <button
-                                    onClick={() => handleDeleteMessage(msg.id)}
+                                    onClick={() => requestDeleteMessage(msg.id)}
                                     className="opacity-0 group-hover:opacity-100 transition-opacity text-rose-300 hover:text-rose-100 p-0.5 rounded cursor-pointer"
                                     title="Xabarni o'chirish"
                                   >
@@ -746,6 +776,45 @@ export default function Chat({ setCurrentPage }) {
               </form>
             )}
 
+          </div>
+        </div>
+      )}
+
+      {/* Custom Confirmation Modal */}
+      {deleteConfirmModal.isOpen && (
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fadeIn">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 max-w-sm w-full shadow-2xl space-y-4 animate-scaleUp">
+            <div className="w-12 h-12 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-400 flex items-center justify-center mx-auto shadow-lg shadow-rose-500/5">
+              <AlertTriangle size={24} />
+            </div>
+
+            <div className="text-center space-y-1.5">
+              <h3 className="text-base font-bold text-white">
+                {deleteConfirmModal.title}
+              </h3>
+              <p className="text-xs text-slate-400 leading-relaxed font-medium">
+                {deleteConfirmModal.message}
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2.5 pt-2">
+              <button
+                type="button"
+                onClick={() => setDeleteConfirmModal(prev => ({ ...prev, isOpen: false }))}
+                className="flex-1 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold rounded-xl transition-all cursor-pointer"
+              >
+                Bekor qilish
+              </button>
+
+              <button
+                type="button"
+                onClick={handleConfirmDelete}
+                className="flex-1 py-2.5 bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-500 hover:to-red-500 text-white text-xs font-bold rounded-xl shadow-lg shadow-rose-600/30 transition-all cursor-pointer flex items-center justify-center gap-1.5"
+              >
+                <Trash2 size={14} />
+                Ha, O'chirilsin
+              </button>
+            </div>
           </div>
         </div>
       )}
