@@ -38,7 +38,7 @@ public class ChatService {
     private NotificationService notificationService;
 
     // Get rooms for a specific user
-    @Transactional(readOnly = true)
+    @Transactional
     public List<Map<String, Object>> getUserChatRooms(User user) {
         if (user == null) return Collections.emptyList();
         
@@ -55,7 +55,7 @@ public class ChatService {
     }
 
     // Admin Monitoring: Get ALL rooms in system
-    @Transactional(readOnly = true)
+    @Transactional
     public List<Map<String, Object>> getAllChatRoomsForAdmin() {
         List<ChatRoom> rooms = chatRoomRepository.findAllRoomsForAdmin();
         List<Map<String, Object>> result = new ArrayList<>();

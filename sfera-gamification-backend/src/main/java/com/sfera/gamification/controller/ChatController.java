@@ -34,7 +34,12 @@ public class ChatController {
         if (user == null) {
             return ResponseEntity.status(401).body("Unauthorized");
         }
-        return ResponseEntity.ok(chatService.getUserChatRooms(user));
+        try {
+            return ResponseEntity.ok(chatService.getUserChatRooms(user));
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(500).body("Error: " + e.getClass().getName() + ": " + e.getMessage());
+        }
     }
 
     // Admin Oversight: Get ALL chat rooms in system
