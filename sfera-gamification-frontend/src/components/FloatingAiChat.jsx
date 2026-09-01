@@ -30,17 +30,19 @@ export default function FloatingAiChat() {
     }
   }, [messages, isOpen, isMinimized]);
 
-  const sendMessage = async () => {
-    if (!input.trim() || loading) return;
-    const userMsg = input.trim();
-    setInput('');
+  const sendMessage = async (overrideText = null) => {
+    const userMsg = (typeof overrideText === 'string' ? overrideText : input).trim();
+    if (!userMsg || loading) return;
+    if (typeof overrideText !== 'string') setInput('');
     setMessages(prev => [...prev, { role: 'user', content: userMsg }]);
     setLoading(true);
     try {
-      const res = await axios.post('/api/ai/chat', { message: userMsg });
+      const res = await axios.post('/api/ai/chat', { message: userMsg }, { timeout: 35000 });
       setMessages(prev => [...prev, { role: 'assistant', content: res.data.reply || 'Javob olinmadi.' }]);
     } catch (err) {
-      setMessages(prev => [...prev, { role: 'assistant', content: '❌ Xatolik yuz berdi. Iltimos, qayta urinib ko\'ring.' }]);
+      console.error("AI chat error:", err);
+      const errMsg = err.response?.data?.message || err.response?.data || err.message || 'Xatolik yuz berdi';
+      setMessages(prev => [...prev, { role: 'assistant', content: `❌ Xatolik yuz berdi: ${errMsg}. Iltimos, qayta urinib ko'ring.` }]);
     } finally {
       setLoading(false);
     }
@@ -155,7 +157,7 @@ export default function FloatingAiChat() {
               {messages.length === 1 && (
                 <div className="px-3 pb-2 flex flex-wrap gap-1.5">
                   {['Bugungi to\'lovlar', 'Barcha qarzdorlar', 'Faol guruhlar', 'Davomat holati'].map(q => (
-                    <button key={q} onClick={() => { setInput(q); setTimeout(() => sendMessage(), 0); }}
+                    <button key={q} onClick={() => sendMessage(q)}
                       className="text-xs px-2.5 py-1 bg-slate-800 hover:bg-violet-900/40 hover:text-violet-300 text-slate-400 rounded-full border border-slate-700/50 hover:border-violet-500/50 transition-colors">
                       {q}
                     </button>

@@ -104,6 +104,37 @@ public class StudentController {
             students = studentService.getActiveStudents();
         }
 
+        // Batch pre-load data into in-memory maps to avoid 600+ N+1 queries
+        Map<Long, String> studentUsernameMap = new HashMap<>();
+        for (User u : userRepository.findAll()) {
+            if (u.getStudent() != null) {
+                studentUsernameMap.put(u.getStudent().getId(), u.getUsername());
+            }
+        }
+
+        Map<Long, GroupStudent> studentActiveGroupMap = new HashMap<>();
+        for (GroupStudent gs : groupStudentRepository.findAll()) {
+            if ("ACTIVE".equals(gs.getStatus()) && gs.getStudent() != null && gs.getGroup() != null) {
+                studentActiveGroupMap.putIfAbsent(gs.getStudent().getId(), gs);
+            }
+        }
+
+        Map<Long, BigDecimal> studentPaidMap = new HashMap<>();
+        for (Payment p : paymentRepository.findAll()) {
+            if (p.getInvoice() != null && p.getInvoice().getEnrollment() != null && p.getInvoice().getEnrollment().getStudent() != null) {
+                Long sId = p.getInvoice().getEnrollment().getStudent().getId();
+                studentPaidMap.put(sId, studentPaidMap.getOrDefault(sId, BigDecimal.ZERO).add(p.getAmount()));
+            }
+        }
+
+        Map<Long, BigDecimal> studentInvoicedMap = new HashMap<>();
+        for (Invoice inv : invoiceRepository.findAll()) {
+            if (inv.getEnrollment() != null && inv.getEnrollment().getStudent() != null) {
+                Long sId = inv.getEnrollment().getStudent().getId();
+                studentInvoicedMap.put(sId, studentInvoicedMap.getOrDefault(sId, BigDecimal.ZERO).add(inv.getAmount()));
+            }
+        }
+
         List<Map<String, Object>> response = new ArrayList<>();
         
         for (Student s : students) {
@@ -125,30 +156,21 @@ public class StudentController {
             // Get total XP
             map.put("xp", pointTransactionRepository.getStudentXp(s.getId()));
             
-            // Get username
-            User studentUser = userRepository.findByStudentId(s.getId()).orElse(null);
-            if (studentUser != null) {
-                map.put("username", studentUser.getUsername());
-            } else {
-                map.put("username", "");
-            }
+            // Get username from in-memory map
+            map.put("username", studentUsernameMap.getOrDefault(s.getId(), ""));
 
-            // Get group details
-            List<GroupStudent> list = groupStudentRepository.findByStudentIdAndStatus(s.getId(), "ACTIVE");
+            // Get group details from in-memory map
+            GroupStudent gs = studentActiveGroupMap.get(s.getId());
             BigDecimal studentCoursePrice = BigDecimal.ZERO;
             if (s.getCustomPrice() != null) {
                 studentCoursePrice = s.getCustomPrice();
-            } else if (!list.isEmpty()) {
-                Group grp = list.get(0).getGroup();
-                if (grp.getCourse() != null && grp.getCourse().getPrice() != null) {
-                    studentCoursePrice = grp.getCourse().getPrice();
-                }
+            } else if (gs != null && gs.getGroup() != null && gs.getGroup().getCourse() != null && gs.getGroup().getCourse().getPrice() != null) {
+                studentCoursePrice = gs.getGroup().getCourse().getPrice();
             }
 
-            if (!list.isEmpty()) {
-                Group grp = list.get(0).getGroup();
-                map.put("groupId", grp.getId());
-                map.put("groupName", grp.getName());
+            if (gs != null && gs.getGroup() != null) {
+                map.put("groupId", gs.getGroup().getId());
+                map.put("groupName", gs.getGroup().getName());
             } else {
                 map.put("groupId", null);
                 map.put("groupName", "Guruhsiz");
@@ -156,19 +178,11 @@ public class StudentController {
             map.put("customPrice", s.getCustomPrice());
             map.put("coursePrice", studentCoursePrice);
 
-            // Payments & Debt calculation
-            List<Payment> payments = paymentRepository.findByInvoiceEnrollmentStudentId(s.getId());
-            BigDecimal totalPaid = BigDecimal.ZERO;
-            for (Payment p : payments) {
-                totalPaid = totalPaid.add(p.getAmount());
-            }
+            // Payments & Debt calculation from in-memory maps
+            BigDecimal totalPaid = studentPaidMap.getOrDefault(s.getId(), BigDecimal.ZERO);
             map.put("totalPaid", totalPaid);
 
-            List<Invoice> invoices = invoiceRepository.findByEnrollmentStudentId(s.getId());
-            BigDecimal totalInvoiced = BigDecimal.ZERO;
-            for (Invoice inv : invoices) {
-                totalInvoiced = totalInvoiced.add(inv.getAmount());
-            }
+            BigDecimal totalInvoiced = studentInvoicedMap.getOrDefault(s.getId(), BigDecimal.ZERO);
 
             BigDecimal expectedFee = totalInvoiced.compareTo(BigDecimal.ZERO) > 0 ? totalInvoiced : studentCoursePrice;
             BigDecimal balanceDue = expectedFee.subtract(totalPaid);

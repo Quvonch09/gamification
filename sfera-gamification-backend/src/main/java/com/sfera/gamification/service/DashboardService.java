@@ -189,11 +189,16 @@ public class DashboardService {
             // Leads count (NEW status)
             newLeadsCount = leadRepository.findByStatus("NEW").size();
 
-            // Paid vs debtor students (simplified: paid = has any payment, debtor = no payment)
+            // Paid vs debtor students - optimized: 1 single query instead of N+1
             List<Student> allStudents = studentRepository.findByStatus("ACTIVE");
+            List<Payment> allPayments = paymentRepository.findAll();
+            Set<Long> paidStudentIds = allPayments.stream()
+                    .filter(p -> p.getInvoice() != null && p.getInvoice().getEnrollment() != null && p.getInvoice().getEnrollment().getStudent() != null)
+                    .map(p -> p.getInvoice().getEnrollment().getStudent().getId())
+                    .collect(Collectors.toSet());
+
             for (Student s : allStudents) {
-                List<Payment> payments = paymentRepository.findByInvoiceEnrollmentStudentId(s.getId());
-                if (payments != null && !payments.isEmpty()) {
+                if (paidStudentIds.contains(s.getId())) {
                     paidStudentsCount++;
                 } else {
                     debtorStudentsCount++;
