@@ -124,4 +124,34 @@ public class ChatController {
         }
         return ResponseEntity.ok(chatService.getAvailableContacts(user));
     }
+
+    // Delete Individual Message
+    @DeleteMapping("/messages/{messageId}")
+    public ResponseEntity<?> deleteMessage(@PathVariable Long messageId, Principal principal) {
+        User user = getAuthUser(principal);
+        if (user == null) {
+            return ResponseEntity.status(401).body("Unauthorized");
+        }
+        try {
+            chatService.deleteMessage(messageId, user);
+            return ResponseEntity.ok(Map.of("success", true));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    // Delete Chat Room (Entire Conversation)
+    @DeleteMapping("/rooms/{roomId}")
+    public ResponseEntity<?> deleteChatRoom(@PathVariable Long roomId, Principal principal) {
+        User user = getAuthUser(principal);
+        if (user == null) {
+            return ResponseEntity.status(401).body("Unauthorized");
+        }
+        try {
+            chatService.deleteChatRoom(roomId, user);
+            return ResponseEntity.ok(Map.of("success", true));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
 }

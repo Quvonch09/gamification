@@ -443,4 +443,39 @@ public class ChatService {
 
         return res;
     }
+
+    // Delete Individual Message
+    @Transactional
+    public void deleteMessage(Long messageId, User requester) {
+        ChatMessage msg = chatMessageRepository.findById(messageId)
+                .orElseThrow(() -> new IllegalArgumentException("Xabar topilmadi"));
+
+        boolean isAdmin = "SUPER_ADMIN".equals(requester.getRole()) || "ADMIN".equals(requester.getRole()) || "BRANCH_ADMIN".equals(requester.getRole());
+        boolean isSender = msg.getSender().getId().equals(requester.getId());
+
+        if (!isSender && !isAdmin) {
+            throw new IllegalArgumentException("Siz ushbu xabarni o'chira olmaysiz");
+        }
+
+        chatMessageRepository.deleteById(messageId);
+    }
+
+    // Delete Chat Room (Entire Conversation)
+    @Transactional
+    public void deleteChatRoom(Long roomId, User requester) {
+        ChatRoom room = chatRoomRepository.findById(roomId)
+                .orElseThrow(() -> new IllegalArgumentException("Chat xonasi topilmadi"));
+
+        boolean isAdmin = "SUPER_ADMIN".equals(requester.getRole()) || "ADMIN".equals(requester.getRole()) || "BRANCH_ADMIN".equals(requester.getRole());
+        boolean isCreator = room.getCreatedBy() != null && room.getCreatedBy().getId().equals(requester.getId());
+        boolean isParticipant = chatParticipantRepository.existsByChatRoomIdAndUserId(roomId, requester.getId());
+
+        if (!isAdmin && !isCreator && !isParticipant) {
+            throw new IllegalArgumentException("Siz ushbu chatni o'chirish huquqiga ega emassiz");
+        }
+
+        chatMessageRepository.deleteByChatRoomId(roomId);
+        chatParticipantRepository.deleteByChatRoomId(roomId);
+        chatRoomRepository.deleteById(roomId);
+    }
 }

@@ -21,7 +21,8 @@ import {
   Eye, 
   ChevronRight,
   Sparkles,
-  Info
+  Info,
+  Trash2
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -205,6 +206,32 @@ export default function Chat({ setCurrentPage }) {
     setSelectedGroupMembers(prev => 
       prev.includes(uid) ? prev.filter(id => id !== uid) : [...prev, uid]
     );
+  };
+
+  const handleDeleteMessage = async (msgId) => {
+    if (!window.confirm("Ushbu xabarni o'chirmoqchimisiz?")) return;
+    try {
+      await axios.delete(`/api/chat/messages/${msgId}`);
+      setMessages(prev => prev.filter(m => m.id !== msgId));
+    } catch (err) {
+      console.error("Delete message error", err);
+      alert(err.response?.data || "Xabarni o'chirishda xatolik yuz berdi");
+    }
+  };
+
+  const handleDeleteRoom = async (roomId) => {
+    if (!window.confirm("Diqqat! Ushbu chat va undagi barcha xabarlar o'chiriladi. Ishonchingiz komilmi?")) return;
+    try {
+      await axios.delete(`/api/chat/rooms/${roomId}`);
+      if (activeRoom?.id === roomId) {
+        setActiveRoom(null);
+      }
+      loadRooms();
+      if (isAdmin) loadAdminRooms();
+    } catch (err) {
+      console.error("Delete room error", err);
+      alert(err.response?.data || "Chatni o'chirishda xatolik yuz berdi");
+    }
   };
 
   // Filtered room lists
@@ -460,6 +487,14 @@ export default function Chat({ setCurrentPage }) {
                   <span className="text-[10px] text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full font-bold">
                     ● Onlayn
                   </span>
+
+                  <button
+                    onClick={() => handleDeleteRoom(activeRoom.id)}
+                    className="p-1.5 text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 border border-slate-800 hover:border-rose-500/30 rounded-xl transition-all cursor-pointer"
+                    title="Chatni va barcha xabarlarni o'chirish"
+                  >
+                    <Trash2 size={15} />
+                  </button>
                 </div>
               </div>
 
@@ -506,17 +541,29 @@ export default function Chat({ setCurrentPage }) {
                           )}
 
                           {/* Message Bubble */}
-                          <div className={`p-3 rounded-2xl text-xs sm:text-sm leading-relaxed shadow-lg ${
-                            isMe 
-                              ? 'bg-gradient-to-r from-indigo-600 to-indigo-700 text-white rounded-tr-none' 
-                              : 'bg-slate-900 border border-slate-800 text-slate-200 rounded-tl-none'
-                          }`}>
-                            <p className="whitespace-pre-wrap break-words">{msg.content}</p>
-                            
-                            <div className={`text-[9px] mt-1 font-mono text-right ${
-                              isMe ? 'text-indigo-200' : 'text-slate-500'
+                          <div className="relative group">
+                            <div className={`p-3 rounded-2xl text-xs sm:text-sm leading-relaxed shadow-lg ${
+                              isMe 
+                                ? 'bg-gradient-to-r from-indigo-600 to-indigo-700 text-white rounded-tr-none' 
+                                : 'bg-slate-900 border border-slate-800 text-slate-200 rounded-tl-none'
                             }`}>
-                              {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              <p className="whitespace-pre-wrap break-words">{msg.content}</p>
+                              
+                              <div className={`text-[9px] mt-1 font-mono flex items-center justify-end gap-2 ${
+                                isMe ? 'text-indigo-200' : 'text-slate-500'
+                              }`}>
+                                <span>{new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                
+                                {(isMe || isAdmin) && (
+                                  <button
+                                    onClick={() => handleDeleteMessage(msg.id)}
+                                    className="opacity-0 group-hover:opacity-100 transition-opacity text-rose-300 hover:text-rose-100 p-0.5 rounded cursor-pointer"
+                                    title="Xabarni o'chirish"
+                                  >
+                                    <Trash2 size={11} />
+                                  </button>
+                                )}
+                              </div>
                             </div>
                           </div>
                         </div>
