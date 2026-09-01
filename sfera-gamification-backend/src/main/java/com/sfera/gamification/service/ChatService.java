@@ -97,12 +97,12 @@ public class ChatService {
                     .createdAt(LocalDateTime.now())
                     .updatedAt(LocalDateTime.now())
                     .build();
-            room = chatRoomRepository.save(room);
+            final ChatRoom savedRoom = chatRoomRepository.save(room);
 
             // Add mentor if available
             if (g.getMentor() != null && g.getMentor().getUser() != null) {
                 ChatParticipant p = ChatParticipant.builder()
-                        .chatRoom(room)
+                        .chatRoom(savedRoom)
                         .user(g.getMentor().getUser())
                         .role("ADMIN")
                         .joinedAt(LocalDateTime.now())
@@ -115,9 +115,9 @@ public class ChatService {
             for (GroupStudent gs : gsList) {
                 if (gs.getStudent() != null) {
                     User stdUser = userRepository.findByStudentId(gs.getStudent().getId()).orElse(null);
-                    if (stdUser != null && !chatParticipantRepository.existsByChatRoomIdAndUserId(room.getId(), stdUser.getId())) {
+                    if (stdUser != null && !chatParticipantRepository.existsByChatRoomIdAndUserId(savedRoom.getId(), stdUser.getId())) {
                         ChatParticipant p = ChatParticipant.builder()
-                                .chatRoom(room)
+                                .chatRoom(savedRoom)
                                 .user(stdUser)
                                 .role("MEMBER")
                                 .joinedAt(LocalDateTime.now())
@@ -126,7 +126,7 @@ public class ChatService {
                     }
                 }
             }
-            return room;
+            return savedRoom;
         });
     }
 
@@ -200,7 +200,7 @@ public class ChatService {
                 .createdAt(LocalDateTime.now())
                 .updatedAt(LocalDateTime.now())
                 .build();
-        room = chatRoomRepository.save(room);
+        final ChatRoom savedRoom = chatRoomRepository.save(room);
 
         Set<Long> uniqueIds = new HashSet<>(participantUserIds != null ? participantUserIds : Collections.emptyList());
         uniqueIds.add(creator.getId());
@@ -209,7 +209,7 @@ public class ChatService {
         for (Long uid : uniqueIds) {
             userRepository.findById(uid).ifPresent(u -> {
                 participants.add(ChatParticipant.builder()
-                        .chatRoom(room)
+                        .chatRoom(savedRoom)
                         .user(u)
                         .role(u.getId().equals(creator.getId()) ? "ADMIN" : "MEMBER")
                         .joinedAt(LocalDateTime.now())
@@ -218,7 +218,7 @@ public class ChatService {
         }
         chatParticipantRepository.saveAll(participants);
 
-        return formatChatRoom(room, creator);
+        return formatChatRoom(savedRoom, creator);
     }
 
     // Send Message
