@@ -68,4 +68,30 @@ public class NotificationController {
         notificationService.deleteNotification(id);
         return ResponseEntity.ok().build();
     }
+
+    @PostMapping("/send")
+    public ResponseEntity<?> sendNotificationOrTask(@RequestBody Map<String, Object> req, Principal principal) {
+        if (principal == null) return ResponseEntity.status(401).body("Unauthorized");
+        String title = (String) req.get("title");
+        String message = (String) req.get("message");
+        String targetRole = (String) req.get("targetRole");
+        String targetUsername = (String) req.get("targetUsername");
+        String type = req.get("type") != null ? req.get("type").toString() : "CUSTOM";
+
+        if (title == null || title.trim().isEmpty() || message == null || message.trim().isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Sarlavha va xabar matni bo'sh bo'lmasligi kerak"));
+        }
+
+        // Resolve targetUserId from targetUsername if provided
+        Long targetUserId = null;
+        if (targetUsername != null && !targetUsername.trim().isEmpty()) {
+            User targetUser = userRepository.findByUsername(targetUsername).orElse(null);
+            if (targetUser != null) {
+                targetUserId = targetUser.getId();
+            }
+        }
+
+        Notification n = notificationService.createCustomNotification(title, message, type, targetRole, targetUserId);
+        return ResponseEntity.ok(Map.of("success", true, "notificationId", n.getId()));
+    }
 }

@@ -11,9 +11,9 @@ import java.util.List;
 @Repository
 public interface NotificationRepository extends JpaRepository<Notification, Long> {
 
-    @Query("SELECT n FROM Notification n WHERE (n.targetRole IS NULL OR n.targetRole = :role OR (n.targetUser IS NOT NULL AND n.targetUser.id = :userId)) ORDER BY n.createdAt DESC")
+    @Query("SELECT n FROM Notification n WHERE (n.targetRole IS NULL OR n.targetRole = :role OR (:role IN ('ADMIN', 'BRANCH_ADMIN') AND n.targetRole IN ('ADMIN', 'BRANCH_ADMIN')) OR (n.targetUser IS NOT NULL AND n.targetUser.id = :userId)) ORDER BY n.createdAt DESC")
     List<Notification> findForUser(@Param("role") String role, @Param("userId") Long userId);
 
-    @Query("SELECT COUNT(n) FROM Notification n WHERE n.read = false AND (n.targetRole IS NULL OR n.targetRole = :role OR (n.targetUser IS NOT NULL AND n.targetUser.id = :userId))")
+    @Query("SELECT COUNT(n) FROM Notification n WHERE n.read = false AND (n.targetRole IS NULL OR n.targetRole = :role OR (:role IN ('ADMIN', 'BRANCH_ADMIN') AND n.targetRole IN ('ADMIN', 'BRANCH_ADMIN')) OR (n.targetUser IS NOT NULL AND n.targetUser.id = :userId))")
     long countUnreadForUser(@Param("role") String role, @Param("userId") Long userId);
 }

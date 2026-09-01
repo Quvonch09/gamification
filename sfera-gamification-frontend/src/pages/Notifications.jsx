@@ -18,9 +18,17 @@ import { useAuth } from '../context/AuthContext';
 
 export default function Notifications({ onNotificationUpdated }) {
   const { user } = useAuth();
+  const isSuperAdmin = user?.role === 'SUPER_ADMIN';
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [filterType, setFilterType] = useState('ALL'); // 'ALL' | 'UNREAD' | 'PAYMENT' | 'ABSENT_STUDENT_CALL' | 'LESSON'
+  const [filterType, setFilterType] = useState('ALL');
+
+  // Send notification form state (Super Admin only)
+  const [showSendForm, setShowSendForm] = useState(false);
+  const [sendForm, setSendForm] = useState({ title: '', message: '', targetRole: 'ALL', targetUsername: '' });
+  const [sendLoading, setSendLoading] = useState(false);
+  const [sendSuccess, setSendSuccess] = useState('');
+  const [sendError, setSendError] = useState('');
 
   useEffect(() => {
     fetchNotifications();
@@ -78,6 +86,27 @@ export default function Notifications({ onNotificationUpdated }) {
       return true;
     });
   }, [notifications, filterType]);
+
+  const handleSendNotification = async (e) => {
+    e.preventDefault();
+    setSendLoading(true); setSendSuccess(''); setSendError('');
+    try {
+      await axios.post('/api/notifications/send', {
+        title: sendForm.title,
+        message: sendForm.message,
+        targetRole: sendForm.targetRole === 'SPECIFIC' ? null : sendForm.targetRole,
+        targetUsername: sendForm.targetRole === 'SPECIFIC' ? sendForm.targetUsername : null,
+        type: 'CUSTOM'
+      });
+      setSendSuccess('Bildirishnoma muvaffaqiyatli yuborildi! ✅');
+      setSendForm({ title: '', message: '', targetRole: 'ALL', targetUsername: '' });
+      setTimeout(() => { setSendSuccess(''); setShowSendForm(false); }, 2000);
+    } catch (err) {
+      setSendError(err.response?.data?.message || 'Xatolik yuz berdi');
+    } finally {
+      setSendLoading(false);
+    }
+  };
 
   const unreadCount = useMemo(() => {
     return notifications.filter(n => !n.read).length;
@@ -154,6 +183,84 @@ export default function Notifications({ onNotificationUpdated }) {
           </button>
         </div>
       </div>
+
+      {/* Send Notification Panel - Only for SUPER_ADMIN */}
+      {isSuperAdmin && (
+        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-violet-500/10 border border-violet-500/20 text-violet-400 flex items-center justify-center">
+                <Bell size={16} />
+              </div>
+              <div>
+                <p className="text-sm font-bold text-white">Bildirishnoma Yuborish</p>
+                <p className="text-[11px] text-slate-500">Xodimlarga xabar yoki vazifa jo'natish</p>
+              </div>
+            </div>
+            <button
+              onClick={() => setShowSendForm(p => !p)}
+              className="px-3 py-1.5 bg-violet-600/20 hover:bg-violet-600/30 text-violet-400 border border-violet-500/30 rounded-xl text-xs font-bold transition-colors"
+            >
+              {showSendForm ? 'Yopish' : '+ Yuborish'}
+            </button>
+          </div>
+
+          {showSendForm && (
+            <form onSubmit={handleSendNotification} className="mt-4 space-y-3">
+              {sendSuccess && <div className="p-2 bg-emerald-900/30 border border-emerald-500/30 rounded-xl text-emerald-400 text-xs">{sendSuccess}</div>}
+              {sendError && <div className="p-2 bg-rose-900/30 border border-rose-500/30 rounded-xl text-rose-400 text-xs">{sendError}</div>}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="col-span-2">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase">Sarlavha *</label>
+                  <input required value={sendForm.title}
+                    onChange={e => setSendForm(p => ({ ...p, title: e.target.value }))}
+                    placeholder="Bildirishnoma sarlavhasi..."
+                    className="mt-1 w-full bg-slate-800 text-slate-200 rounded-xl px-3 py-2 text-sm border border-slate-700/60 focus:outline-none focus:border-violet-500/50"
+                  />
+                </div>
+                <div className="col-span-2">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase">Xabar *</label>
+                  <textarea required value={sendForm.message} rows={3}
+                    onChange={e => setSendForm(p => ({ ...p, message: e.target.value }))}
+                    placeholder="Xabar matni..."
+                    className="mt-1 w-full bg-slate-800 text-slate-200 rounded-xl px-3 py-2 text-sm border border-slate-700/60 focus:outline-none focus:border-violet-500/50 resize-none"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold text-slate-500 uppercase">Kimga</label>
+                  <select value={sendForm.targetRole}
+                    onChange={e => setSendForm(p => ({ ...p, targetRole: e.target.value }))}
+                    className="mt-1 w-full bg-slate-800 text-slate-200 rounded-xl px-3 py-2 text-sm border border-slate-700/60 focus:outline-none"
+                  >
+                    <option value="ALL">Barcha xodimlar</option>
+                    <option value="ADMIN">Administratorlar</option>
+                    <option value="MENTOR">O'qituvchilar</option>
+                    <option value="CASHIER">Kassirlar</option>
+                    <option value="ACCOUNTANT">Hisobchilar</option>
+                    <option value="OPERATOR">Operatorlar</option>
+                    <option value="SPECIFIC">Muayyan shaxs (username)</option>
+                  </select>
+                </div>
+                {sendForm.targetRole === 'SPECIFIC' && (
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-500 uppercase">Username</label>
+                    <input required value={sendForm.targetUsername}
+                      onChange={e => setSendForm(p => ({ ...p, targetUsername: e.target.value }))}
+                      placeholder="username kiriting..."
+                      className="mt-1 w-full bg-slate-800 text-slate-200 rounded-xl px-3 py-2 text-sm border border-slate-700/60 focus:outline-none"
+                    />
+                  </div>
+                )}
+              </div>
+              <button type="submit" disabled={sendLoading}
+                className="w-full h-9 bg-violet-600 hover:bg-violet-500 disabled:opacity-50 text-white font-bold rounded-xl text-sm transition-all"
+              >
+                {sendLoading ? 'Yuborilmoqda...' : 'Bildirishnomani Yuborish 🔔'}
+              </button>
+            </form>
+          )}
+        </div>
+      )}
 
       {/* Filter Tabs */}
       <div className="flex flex-wrap gap-2 bg-slate-950 p-1.5 rounded-2xl border border-slate-800 text-xs font-bold">

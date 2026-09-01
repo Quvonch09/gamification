@@ -78,9 +78,17 @@ export default function Schedule({ refreshTrigger, setCurrentPage }) {
         axios.get('/api/mentors').catch(() => ({ data: [] }))
       ]);
 
-      const groupData = groupsRes.data || [];
+      let groupData = groupsRes.data || [];
       const roomData = roomsRes.data || [];
       const mentorData = mentorsRes.data || [];
+
+      // If current user is a MENTOR, only show their own groups
+      if (user?.role === 'MENTOR') {
+        groupData = groupData.filter(g =>
+          g.mentorName === user.fullName ||
+          (g.mentorId && mentorData.find(m => m.id === g.mentorId && m.userId === user.id))
+        );
+      }
 
       setGroups(groupData);
       setRooms(roomData);

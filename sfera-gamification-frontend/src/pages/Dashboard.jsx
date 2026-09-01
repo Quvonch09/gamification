@@ -347,12 +347,24 @@ export default function Dashboard({ refreshTrigger, setCurrentPage }) {
     );
   }
 
+  const isSuperAdmin = user?.role === 'SUPER_ADMIN';
+  const isMentor = user?.role === 'MENTOR';
+
   const kpiCards = [
     { title: "JAMI O'QUVCHILAR", value: stats.totalStudents, icon: Users, color: "from-blue-600 to-indigo-600", glow: "shadow-blue-500/10" },
     { title: "BUGUN BERILGAN BALL", value: `+${stats.pointsGivenToday} XP`, icon: PlusCircle, color: "from-emerald-600 to-teal-600", glow: "shadow-emerald-500/10" },
     { title: "BUGUNGI JARIMALAR", value: `-${stats.penaltiesGivenToday} XP`, icon: AlertTriangle, color: "from-rose-600 to-red-600", glow: "shadow-rose-500/10" },
     { title: "JAMI GURUHLAR", value: stats.totalGroups, icon: Folder, color: "from-amber-600 to-orange-600", glow: "shadow-amber-500/10" }
   ];
+
+  // Extra admin/super-admin KPI cards
+  const adminKpiCards = (isSuperAdmin || user?.role === 'ADMIN') ? [
+    { title: "XODIMLAR", value: stats.staffCount ?? '—', icon: User, color: "from-purple-600 to-violet-600", glow: "shadow-purple-500/10" },
+    { title: "YANGI LEADLAR", value: stats.newLeadsCount ?? '—', icon: TrendingUp, color: "from-sky-600 to-cyan-600", glow: "shadow-sky-500/10" },
+    { title: "TO'LOV QILDI", value: stats.paidStudentsCount ?? '—', icon: CalendarDays, color: "from-emerald-600 to-green-700", glow: "shadow-emerald-500/10" },
+    { title: "QARZDORLAR", value: stats.debtorStudentsCount ?? '—', icon: AlertTriangle, color: "from-orange-600 to-red-600", glow: "shadow-orange-500/10" },
+  ] : [];
+
 
   const achievements = [
     { title: "HOMEWORK MASTER", leader: stats.homeworkLeader, icon: BookOpen, desc: "Uyga vazifani eng ko'p bajargan", color: "text-emerald-400 bg-emerald-500/10 border-emerald-500/20" },
@@ -398,6 +410,29 @@ export default function Dashboard({ refreshTrigger, setCurrentPage }) {
           );
         })}
       </div>
+
+      {/* Extra Admin KPI Cards */}
+      {adminKpiCards.length > 0 && (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {adminKpiCards.map((card, idx) => {
+            const Icon = card.icon;
+            return (
+              <div
+                key={idx}
+                className={`bg-slate-900/60 border border-slate-800/60 rounded-2xl p-5 flex items-center justify-between shadow ${card.glow} hover:border-slate-700 transition-all`}
+              >
+                <div>
+                  <span className="text-[10px] font-bold text-slate-500 tracking-wider uppercase">{card.title}</span>
+                  <h3 className="text-xl font-black text-white mt-1 tracking-tight">{card.value}</h3>
+                </div>
+                <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${card.color} flex items-center justify-center text-white`}>
+                  <Icon size={18} />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       {/* Main Charts & Leaders Grid */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">

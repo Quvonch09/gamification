@@ -31,6 +31,12 @@ public class DashboardService {
     @Autowired
     private MentorRepository mentorRepository;
 
+    @Autowired
+    private LeadRepository leadRepository;
+
+    @Autowired
+    private PaymentRepository paymentRepository;
+
     public Map<String, Object> getDashboardStats(String username) {
         User user = userRepository.findByUsername(username).orElse(null);
         if (user == null) {
@@ -168,13 +174,44 @@ public class DashboardService {
         // Sort groups by average XP descending
         groupRatings.sort((g1, g2) -> Double.compare((double) g2.get("averageXp"), (double) g1.get("averageXp")));
 
+        // Extra stats for SUPER_ADMIN and ADMIN roles
+        long staffCount = 0;
+        long newLeadsCount = 0;
+        long paidStudentsCount = 0;
+        long debtorStudentsCount = 0;
+
+        if ("SUPER_ADMIN".equals(user.getRole()) || "ADMIN".equals(user.getRole()) || "BRANCH_ADMIN".equals(user.getRole())) {
+            // Staff count: all users except students
+            staffCount = userRepository.findAll().stream()
+                    .filter(u -> u.getRole() != null && !u.getRole().equals("STUDENT"))
+                    .count();
+
+            // Leads count (NEW status)
+            newLeadsCount = leadRepository.findByStatus("NEW").size();
+
+            // Paid vs debtor students (simplified: paid = has any payment, debtor = no payment)
+            List<Student> allStudents = studentRepository.findByStatus("ACTIVE");
+            for (Student s : allStudents) {
+                List<Payment> payments = paymentRepository.findByInvoiceEnrollmentStudentId(s.getId());
+                if (payments != null && !payments.isEmpty()) {
+                    paidStudentsCount++;
+                } else {
+                    debtorStudentsCount++;
+                }
+            }
+        }
+
         Map<String, Object> result = new HashMap<>();
         result.put("totalStudents", activeStudents.size());
         result.put("totalGroups", activeGroups.size());
         result.put("pointsGivenToday", pointsGivenToday);
-        result.put("penaltiesGivenToday", Math.abs(penaltiesGivenToday)); // Show as positive absolute jarima count or negative? Let's show as absolute value, and frontend can display with a minus sign if preferred, or direct count.
+        result.put("penaltiesGivenToday", Math.abs(penaltiesGivenToday));
         result.put("top5", top5);
         result.put("groupRatings", groupRatings);
+        result.put("staffCount", staffCount);
+        result.put("newLeadsCount", newLeadsCount);
+        result.put("paidStudentsCount", paidStudentsCount);
+        result.put("debtorStudentsCount", debtorStudentsCount);
 
         result.put("activityLeader", getLeaderInfo(activityLeader, activityLeader != null ? activityLeader.activityCount : 0));
         result.put("projectLeader", getLeaderInfo(projectLeader, projectLeader != null ? projectLeader.projectCount : 0));

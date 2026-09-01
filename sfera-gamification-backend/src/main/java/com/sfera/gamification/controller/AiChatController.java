@@ -29,6 +29,16 @@ public class AiChatController {
         return ResponseEntity.ok(Map.of("reply", reply));
     }
 
+    @GetMapping("/daily-briefing")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
+    public ResponseEntity<?> getDailyBriefing(Principal principal) {
+        if (principal == null) {
+            return ResponseEntity.status(401).body("Unauthorized");
+        }
+        String briefing = aiChatService.generateDailyBriefing(principal.getName());
+        return ResponseEntity.ok(Map.of("briefing", briefing));
+    }
+
     public static class ChatRequest {
         private String message;
         public String getMessage() { return message; }

@@ -24,6 +24,8 @@ import Notifications from './pages/Notifications';
 import DebtorsList from './pages/DebtorsList';
 import AdminDashboard from './pages/AdminDashboard';
 import TestModeBanner from './components/TestModeBanner';
+import FloatingAiChat from './components/FloatingAiChat';
+import DailyBriefingModal from './components/DailyBriefingModal';
 import { LogIn, ShieldAlert, Award, Star, X, AlertTriangle, Search, Sun, Moon, Bell } from 'lucide-react';
 import axios from 'axios';
 import CustomSelect from './components/CustomSelect';
@@ -78,6 +80,20 @@ function AppContent() {
       setCurrentPage('expenses');
     }
   }, [user]);
+
+  // Daily Briefing for SUPER_ADMIN
+  const [showDailyBriefing, setShowDailyBriefing] = useState(false);
+  useEffect(() => {
+    if (user?.role === 'SUPER_ADMIN' && token) {
+      const today = new Date().toDateString();
+      const lastSeen = localStorage.getItem('daily_briefing_date');
+      if (lastSeen !== today) {
+        // Show briefing modal 1 second after login
+        setTimeout(() => setShowDailyBriefing(true), 1500);
+        localStorage.setItem('daily_briefing_date', today);
+      }
+    }
+  }, [user, token]);
 
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [showQuickAwardModal, setShowQuickAwardModal] = useState(false);
@@ -505,6 +521,14 @@ function AppContent() {
         </main>
         </div>
       </div>
+
+      {/* Floating AI Chat for all roles */}
+      {token && <FloatingAiChat />}
+
+      {/* Daily Briefing Modal for SUPER_ADMIN */}
+      {showDailyBriefing && (
+        <DailyBriefingModal onClose={() => setShowDailyBriefing(false)} />
+      )}
 
       {/* Modal: Quick Award / Tezkor Baholash */}
       {showQuickAwardModal && (

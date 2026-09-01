@@ -195,6 +195,10 @@ public class FinanceController {
             return ResponseEntity.status(404).body("User not found");
         }
 
+        if ("SUPER_ADMIN".equals(user.getRole())) {
+            return ResponseEntity.status(403).body("Super Admin to'lov kira olmaydi. Faqat Administrator yoki Kassir to'lov qabul qilishi mumkin.");
+        }
+
         String invoiceIdStr = request.get("invoiceId");
         String amountStr = request.get("amount");
         String method = request.get("paymentMethod");
@@ -226,6 +230,10 @@ public class FinanceController {
         User user = userRepository.findByUsername(principal.getName()).orElse(null);
         if (user == null) {
             return ResponseEntity.status(404).body("User not found");
+        }
+
+        if ("SUPER_ADMIN".equals(user.getRole())) {
+            return ResponseEntity.status(403).body("Super Admin to'lov kira olmaydi. Faqat Administrator yoki Kassir to'lov qabul qilishi mumkin.");
         }
 
         Object studentIdObj = request.get("studentId");

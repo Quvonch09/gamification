@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import axios from 'axios';
 import { useData } from '../context/DataContext';
 import { useAuth } from '../context/AuthContext';
@@ -151,8 +151,36 @@ export default function LessonPlans() {
   const [bulkFileName, setBulkFileName] = useState('');
   const fileInputRef = useRef(null);
 
+  const [mentorCourseIds, setMentorCourseIds] = useState(null); // null = not filtered, Set = mentor's courses
+
   useEffect(() => {
-    if (courses && courses.length > 0 && !selectedCourseId) {
+    // If mentor, load their groups to find which courses they teach
+    if (isMentor) {
+      axios.get('/api/groups')
+        .then(res => {
+          const myGroups = (res.data || []).filter(g => g.mentorName === user.fullName);
+          const courseIds = new Set(myGroups.map(g => g.courseId?.toString()).filter(Boolean));
+          setMentorCourseIds(courseIds);
+          if (courses && courses.length > 0) {
+            const myFirst = courses.find(c => courseIds.has(c.id?.toString()));
+            if (myFirst) setSelectedCourseId(myFirst.id.toString());
+            else if (courses[0]) setSelectedCourseId(courses[0].id.toString());
+          }
+        })
+        .catch(() => {});
+    }
+  }, [isMentor, courses]);
+
+  const visibleCourses = useMemo(() => {
+    if (!courses) return [];
+    if (isMentor && mentorCourseIds !== null) {
+      return courses.filter(c => mentorCourseIds.has(c.id?.toString()));
+    }
+    return courses;
+  }, [courses, isMentor, mentorCourseIds]);
+
+  useEffect(() => {
+    if (!isMentor && courses && courses.length > 0 && !selectedCourseId) {
       setSelectedCourseId(courses[0].id.toString());
     }
   }, [courses]);

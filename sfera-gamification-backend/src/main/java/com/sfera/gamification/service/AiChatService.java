@@ -122,7 +122,7 @@ public class AiChatService {
 
             Map<String, Object> requestBody = new HashMap<>();
             requestBody.put("model", modelName);
-            requestBody.put("max_tokens", 2048); // Explicitly set max output tokens to prevent context window overflow defaults
+            requestBody.put("max_tokens", 8192); // Increased to 8192 tokens for detailed tables and comprehensive responses
 
             List<Map<String, String>> messages = new ArrayList<>();
             messages.add(Map.of("role", "system", "content", systemPrompt));
@@ -236,9 +236,12 @@ public class AiChatService {
             if (debt.compareTo(java.math.BigDecimal.ZERO) > 0) {
                 debtorCount++;
                 totalDebt = totalDebt.add(debt);
-                if (topDebtors.size() < 10) {
-                    topDebtors.add("- " + s.getFirstName() + " " + s.getLastName() + ": " + debt + " UZS (Tel: " + (s.getPhone() != null ? s.getPhone() : "-") + ")");
+                String grpName = "-";
+                List<GroupStudent> gsList = groupStudentRepository.findByStudentIdAndStatus(s.getId(), "ACTIVE");
+                if (!gsList.isEmpty() && gsList.get(0).getGroup() != null) {
+                    grpName = gsList.get(0).getGroup().getName();
                 }
+                topDebtors.add("- " + s.getFirstName() + " " + s.getLastName() + " | Guruhi: " + grpName + " | Qarz: " + debt + " UZS | Tel: " + (s.getPhone() != null ? s.getPhone() : "-"));
             }
         }
 
@@ -285,7 +288,7 @@ public class AiChatService {
         sb.append("- Qarzdor o'quvchilar soni: ").append(debtorCount).append(" nafar\n");
         sb.append("- Jami qarzdorlik summasi: ").append(totalDebt).append(" UZS\n");
         if (!topDebtors.isEmpty()) {
-            sb.append("Qarzdorlar ro'yxati:\n");
+            sb.append("BARCHA QARZDORLARNING TO'LIQ RO'YXATI:\n");
             for (String td : topDebtors) sb.append(td).append("\n");
         }
 
@@ -299,5 +302,53 @@ public class AiChatService {
         sb.append("- O'quvchiga aylangan (Enrolled): ").append(enrolledLeads).append(" ta\n");
 
         return sb.toString();
+    }
+
+    public String generateDailyBriefing(String username) {
+        String liveStats = buildLiveSystemContext();
+        String systemPrompt = "Siz Sfera IT Akademiyasining Bosh Boshqaruv AI Yordamchisisiz (Sfera AI Executive Briefing).\n"
+                + "Bugun ertalab Super Admin tizimga kirdi. Quyidagi aniq baza ma'lumotlariga tayangan holda, ertalabki motivatsion, aniq raqamlar va tavsiyalarga boy KUNLIK HISOBOT (Morning Briefing) tayyorlab bering:\n\n"
+                + liveStats + "\n\n"
+                + "HISOBOT TUZILISHI:\n"
+                + "🌅 1. Salomlashish va kun rejasi;\n"
+                + "📊 2. Asosiy ko'rsatkichlar (O'quvchilar, Faol guruhlar, Xodimlar);\n"
+                + "💰 3. Moliya va Kassa holati (Oylik tushum, xarajatlar, kutilayotgan tushumlar);\n"
+                + "⚠️ 4. Qarzdorlik holati (eng e'tibor qaratish kerak bo'lgan guruhlar);\n"
+                + "🎯 5. Lidlar va CRM holati;\n"
+                + "💡 6. Bugungi kun uchun Super Adminga 3 ta eng muhim tavsiya.\n\n"
+                + "Javobni o'zbek tilida, chiroyli markdown, aniq sarlavhalar va qiziqarli emojilar bilan yozing.";
+
+        try {
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            headers.set("Authorization", "Bearer " + apiKey);
+
+            Map<String, Object> requestBody = new HashMap<>();
+            requestBody.put("model", modelName);
+            requestBody.put("max_tokens", 8192);
+
+            List<Map<String, String>> messages = new ArrayList<>();
+            messages.add(Map.of("role", "system", "content", systemPrompt));
+            messages.add(Map.of("role", "user", "content", "Assalomu alaykum, bugungi ertalabki umumiy hisobotni tayyorlab bering."));
+            requestBody.put("messages", messages);
+
+            HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestBody, headers);
+            ResponseEntity<Map> response = restTemplate.postForEntity(apiUrl, entity, Map.class);
+
+            if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
+                Map body = response.getBody();
+                List choices = (List) body.get("choices");
+                if (choices != null && !choices.isEmpty()) {
+                    Map choice = (Map) choices.get(0);
+                    Map message = (Map) choice.get("message");
+                    if (message != null) {
+                        return (String) message.get("content");
+                    }
+                }
+            }
+            return "Xayrli tong! Tizim ma'lumotlari yangilandi. Barcha o'quv jarayonlari va kassa holati normal rejimda ishlamoqda.";
+        } catch (Exception e) {
+            return "Xayrli tong! Bugungi hisobotni generatsiya qilishda API xatoligi: " + e.getMessage();
+        }
     }
 }

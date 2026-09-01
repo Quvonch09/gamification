@@ -147,4 +147,25 @@ public class NotificationService {
                 .build();
         return notificationRepository.save(notif);
     }
+
+    @Autowired
+    private com.sfera.gamification.repository.UserRepository userRepository;
+
+    @Transactional
+    public Notification createCustomNotification(String title, String message, String type, String targetRole, Long targetUserId) {
+        User targetUser = null;
+        if (targetUserId != null) {
+            targetUser = userRepository.findById(targetUserId).orElse(null);
+        }
+        Notification notif = Notification.builder()
+                .title(title)
+                .message(message)
+                .type(type != null ? type : "TASK")
+                .targetRole((targetRole != null && !targetRole.trim().isEmpty()) ? targetRole : null)
+                .targetUser(targetUser)
+                .read(false)
+                .createdAt(LocalDateTime.now())
+                .build();
+        return notificationRepository.save(notif);
+    }
 }
