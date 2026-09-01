@@ -27,6 +27,7 @@ public class Notification {
     @Column(name = "target_role", length = 50)
     private String targetRole; // SUPER_ADMIN, BRANCH_ADMIN, ACCOUNTANT, MENTOR, etc.
 
+    @com.fasterxml.jackson.annotation.JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "target_user_id")
     private User targetUser;
