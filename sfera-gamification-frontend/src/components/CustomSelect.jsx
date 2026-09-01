@@ -63,7 +63,13 @@ export default function CustomSelect({ value, onChange, options, placeholder, cl
 
       {/* Dropdown Options List */}
       {isOpen && (
-        <div className={`absolute left-0 right-0 mt-1.5 max-h-60 overflow-y-auto backdrop-blur-xl border rounded-xl z-[100] py-1 divide-y scrollbar-hide ${dropdownClass}`}>
+        <div
+          className={`absolute left-0 right-0 mt-1.5 max-h-56 overflow-y-auto overscroll-contain backdrop-blur-xl border rounded-xl z-[150] py-1 divide-y custom-scrollbar shadow-2xl ${dropdownClass}`}
+          style={{
+            scrollbarWidth: 'thin',
+            scrollbarColor: '#6366f1 rgba(15, 23, 42, 0.5)'
+          }}
+        >
           {placeholder && (
             <div
               onClick={() => handleOptionClick('')}

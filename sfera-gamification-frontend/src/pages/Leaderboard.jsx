@@ -90,15 +90,15 @@ export default function Leaderboard({ setCurrentPage, setSelectedStudentId, refr
   };
 
   return (
-    <div className="p-6 space-y-6 overflow-y-auto max-h-[calc(100vh-4rem)] custom-scrollbar">
+    <div className="p-3 sm:p-6 space-y-4 sm:space-y-6 overflow-y-auto max-h-[calc(100vh-4rem)] custom-scrollbar">
       {/* Page Header with 2-Tier Rating Tabs */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-extrabold tracking-tight text-white flex items-center gap-2">
+          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white flex items-center gap-2">
             <Trophy className="text-amber-400" />
             {ratingScope === 'GROUP' ? "Guruh Reytingi" : "Markaz Umumiy Reytingi"}
           </h1>
-          <p className="text-sm text-slate-400 mt-1 font-medium">
+          <p className="text-xs sm:text-sm text-slate-400 mt-1 font-medium">
             {ratingScope === 'GROUP' 
               ? (isStudent ? `${user?.groupName || 'Guruh'} a'zolari o'rtasidagi reyting` : "Tanlangan guruh o'quvchilari reytingi")
               : "Sfera IT Academy barcha guruhlari va talabalari bo'yicha umumiy reyting"
@@ -107,10 +107,10 @@ export default function Leaderboard({ setCurrentPage, setSelectedStudentId, refr
         </div>
 
         {/* 2-Tier Rating Scope Switcher */}
-        <div className="flex bg-slate-900 border border-slate-800 p-1 rounded-2xl shadow-xl">
+        <div className="flex bg-slate-900 border border-slate-800 p-1 rounded-2xl shadow-xl w-full sm:w-auto overflow-x-auto no-scrollbar">
           <button
             onClick={() => setRatingScope('GROUP')}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-extrabold text-xs sm:text-sm transition-all cursor-pointer ${
+            className={`flex-1 sm:flex-initial flex items-center justify-center gap-2 px-3.5 sm:px-5 py-2 sm:py-2.5 rounded-xl font-extrabold text-xs sm:text-sm transition-all cursor-pointer whitespace-nowrap ${
               ratingScope === 'GROUP'
                 ? 'bg-gradient-to-r from-indigo-600 to-indigo-700 text-white shadow-lg shadow-indigo-600/30'
                 : 'text-slate-400 hover:text-slate-200 hover:bg-slate-850'
@@ -122,14 +122,14 @@ export default function Leaderboard({ setCurrentPage, setSelectedStudentId, refr
 
           <button
             onClick={() => setRatingScope('ALL')}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-extrabold text-xs sm:text-sm transition-all cursor-pointer ${
+            className={`flex-1 sm:flex-initial flex items-center justify-center gap-2 px-3.5 sm:px-5 py-2 sm:py-2.5 rounded-xl font-extrabold text-xs sm:text-sm transition-all cursor-pointer whitespace-nowrap ${
               ratingScope === 'ALL'
                 ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow-lg shadow-amber-500/30'
                 : 'text-slate-400 hover:text-slate-200 hover:bg-slate-850'
             }`}
           >
             <Globe size={16} />
-            <span>Markaz Umumiy Reytingi</span>
+            <span>Markaz Reytingi</span>
           </button>
         </div>
       </div>
@@ -184,7 +184,7 @@ export default function Leaderboard({ setCurrentPage, setSelectedStudentId, refr
 
       {/* Podium for TOP 3 */}
       {!loading && podium.length > 0 && (
-        <div className="flex flex-col md:flex-row items-end justify-center gap-6 pt-10 pb-4 max-w-4xl mx-auto">
+        <div className="flex flex-col md:flex-row items-center md:items-end justify-center gap-4 sm:gap-6 pt-6 sm:pt-10 pb-4 max-w-4xl mx-auto">
           {podium.map((student) => {
             const isFirst = student.place === 1;
             const isSecond = student.place === 2;
@@ -194,10 +194,10 @@ export default function Leaderboard({ setCurrentPage, setSelectedStudentId, refr
               <div 
                 key={student.id}
                 onClick={() => viewProfile(student.id)}
-                className={`w-full md:w-64 bg-slate-900 border rounded-2xl p-6 flex flex-col items-center justify-between cursor-pointer hover:scale-[1.03] transition-all duration-200 shadow-xl ${
-                  isFirst ? 'border-amber-400/50 order-1 md:order-2 h-76 md:-translate-y-6 shadow-amber-500/5' :
-                  isSecond ? 'border-slate-300/40 order-2 md:order-1 h-64 shadow-slate-500/5' :
-                  'border-orange-500/30 order-3 md:order-3 h-58 shadow-orange-500/5'
+                className={`w-full md:w-64 bg-slate-900 border rounded-2xl p-5 sm:p-6 flex flex-col items-center justify-between cursor-pointer hover:scale-[1.02] md:hover:scale-[1.03] transition-all duration-200 shadow-xl ${
+                  isFirst ? 'border-amber-400/50 order-1 md:order-2 h-auto md:h-76 md:-translate-y-6 shadow-amber-500/5' :
+                  isSecond ? 'border-slate-300/40 order-2 md:order-1 h-auto md:h-64 shadow-slate-500/5' :
+                  'border-orange-500/30 order-3 md:order-3 h-auto md:h-58 shadow-orange-500/5'
                 }`}
               >
                 {/* Crown / Trophy Icon */}

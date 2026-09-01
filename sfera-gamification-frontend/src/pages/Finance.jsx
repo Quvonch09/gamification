@@ -133,18 +133,20 @@ export default function Finance({ refreshTrigger }) {
     }
   };
 
-  const totalBilling = invoices.reduce((acc, curr) => acc + curr.amount, 0);
-  const totalPaid = invoices.reduce((acc, curr) => acc + curr.paidAmount, 0);
+  const totalBilling = invoices.reduce((acc, curr) => acc + (curr?.amount || 0), 0);
+  const totalPaid = invoices.reduce((acc, curr) => acc + (curr?.paidAmount || 0), 0);
   const pendingDebt = totalBilling - totalPaid;
 
   const filteredInvoices = invoices.filter(inv => {
-    const studentName = inv.enrollment.student.firstName + ' ' + (inv.enrollment.student.lastName || '');
-    return studentName.toLowerCase().includes(searchQuery.toLowerCase());
+    const student = inv?.enrollment?.student;
+    const studentName = student ? `${student.firstName || ''} ${student.lastName || ''}` : "O'quvchi";
+    return studentName.toLowerCase().includes((searchQuery || '').toLowerCase());
   });
 
   const filteredPayments = payments.filter(pay => {
-    const studentName = pay.invoice.enrollment.student.firstName + ' ' + (pay.invoice.enrollment.student.lastName || '');
-    return studentName.toLowerCase().includes(searchQuery.toLowerCase());
+    const student = pay?.invoice?.enrollment?.student;
+    const studentName = student ? `${student.firstName || ''} ${student.lastName || ''}` : "O'quvchi";
+    return studentName.toLowerCase().includes((searchQuery || '').toLowerCase());
   });
 
   if (loading) {
@@ -256,25 +258,26 @@ export default function Finance({ refreshTrigger }) {
                   </tr>
                 ) : (
                   filteredInvoices.map((inv) => {
-                    const student = inv.enrollment.student;
-                    const group = inv.enrollment.group;
-                    const isOverdue = new Date(inv.dueDate) < new Date() && inv.status !== 'PAID';
+                    const student = inv?.enrollment?.student || { firstName: "Noma'lum", lastName: "", phone: "-" };
+                    const group = inv?.enrollment?.group;
+                    const courseName = inv?.enrollment?.pricePlan?.course?.name || inv?.enrollment?.pricePlan?.name || "Kurs";
+                    const isOverdue = inv?.dueDate && new Date(inv.dueDate) < new Date() && inv.status !== 'PAID';
                     
                     return (
                       <tr key={inv.id} className="hover:bg-slate-850/40 transition-colors h-14">
                         <td className="px-6">
                           <p className="font-bold text-slate-200 text-sm">{student.firstName} {student.lastName}</p>
-                          <span className="text-[10px] text-slate-500 font-medium">{student.phone}</span>
+                          <span className="text-[10px] text-slate-500 font-medium">{student.phone || "-"}</span>
                         </td>
                         <td className="px-6 text-slate-350">
                           <p className="font-bold">{group ? group.name : "Guruhsiz"}</p>
-                          <span className="text-[10px] text-slate-500 font-medium uppercase">{inv.enrollment.pricePlan.course.name}</span>
+                          <span className="text-[10px] text-slate-500 font-medium uppercase">{courseName}</span>
                         </td>
-                        <td className="px-6 font-extrabold text-slate-200">{inv.amount.toLocaleString()} UZS</td>
-                        <td className="px-6 font-semibold text-emerald-400">{inv.paidAmount.toLocaleString()} UZS</td>
+                        <td className="px-6 font-extrabold text-slate-200">{(inv?.amount || 0).toLocaleString()} UZS</td>
+                        <td className="px-6 font-semibold text-emerald-400">{(inv?.paidAmount || 0).toLocaleString()} UZS</td>
                         <td className="px-6">
                           <span className={`inline-flex items-center gap-1 font-bold ${isOverdue ? 'text-rose-400' : 'text-slate-400'}`}>
-                            <Calendar size={12} /> {inv.dueDate}
+                            <Calendar size={12} /> {inv.dueDate || "-"}
                           </span>
                         </td>
                         <td className="px-6 text-center">
@@ -334,14 +337,14 @@ export default function Finance({ refreshTrigger }) {
                   </tr>
                 ) : (
                   filteredPayments.map((pay) => {
-                    const student = pay.invoice.enrollment.student;
+                    const student = pay?.invoice?.enrollment?.student || { firstName: "Noma'lum", lastName: "", phone: "-" };
                     return (
                       <tr key={pay.id} className="hover:bg-slate-850/40 transition-colors h-14">
                         <td className="px-6">
                           <p className="font-bold text-slate-200 text-sm">{student.firstName} {student.lastName}</p>
-                          <span className="text-[10px] text-slate-500 font-medium">{student.phone}</span>
+                          <span className="text-[10px] text-slate-500 font-medium">{student.phone || "-"}</span>
                         </td>
-                        <td className="px-6 font-extrabold text-emerald-400">+{pay.amount.toLocaleString()} UZS</td>
+                        <td className="px-6 font-extrabold text-emerald-400">+{(pay?.amount || 0).toLocaleString()} UZS</td>
                         <td className="px-6">
                           <span className="inline-block text-[10px] font-bold tracking-wider px-2 py-0.5 bg-slate-850 border border-slate-800 text-slate-300 rounded uppercase">
                             {pay.paymentMethod}

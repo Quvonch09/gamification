@@ -26,6 +26,8 @@ export default function Profile() {
   const [formData, setFormData] = useState({
     fullName: user?.fullName || '',
     phone: user?.phone || '',
+    parentName: '',
+    parentPhone: '',
     avatarUrl: user?.avatarUrl || '',
     password: '',
     confirmPassword: ''
@@ -42,16 +44,32 @@ export default function Profile() {
   useEffect(() => {
     // Refresh /me to get latest info
     axios.get('/api/auth/me')
-      .then(res => {
+      .then(async (res) => {
         const d = res.data;
+        setExtraInfo(d);
+        setAvatarPreview(d.avatarUrl || '');
+
+        let studentObj = null;
+        if (d.role === 'STUDENT' && (d.studentId || user?.studentId)) {
+          const sId = d.studentId || user?.studentId;
+          try {
+            const crmRes = await axios.get(`/api/students/${sId}/crm-profile`);
+            if (crmRes.data?.student) {
+              studentObj = crmRes.data.student;
+            }
+          } catch (e) {
+            console.error("Could not load student profile", e);
+          }
+        }
+
         setFormData(prev => ({
           ...prev,
           fullName: d.fullName || '',
-          phone: d.phone || '',
+          phone: studentObj?.phone || d.phone || '',
+          parentName: studentObj?.parentName || d.parentName || '',
+          parentPhone: studentObj?.parentPhone || d.parentPhone || '',
           avatarUrl: d.avatarUrl || ''
         }));
-        setAvatarPreview(d.avatarUrl || '');
-        setExtraInfo(d);
       })
       .catch(err => console.error("Could not load user profile", err));
   }, []);
@@ -97,11 +115,26 @@ export default function Profile() {
         phone: formData.phone,
         avatarUrl: formData.avatarUrl
       };
+      if (user?.role === 'STUDENT') {
+        payload.parentName = formData.parentName;
+        payload.parentPhone = formData.parentPhone;
+      }
       if (formData.password) {
         payload.password = formData.password;
       }
 
       const res = await axios.put('/api/auth/profile', payload);
+
+      // If student, also update student record fields
+      const sId = user?.studentId || extraInfo?.studentId;
+      if (user?.role === 'STUDENT' && sId) {
+        axios.put(`/api/students/${sId}`, {
+          phone: formData.phone,
+          parentName: formData.parentName,
+          parentPhone: formData.parentPhone
+        }).catch(e => console.warn('Sync to student record skipped or handled by auth/profile', e));
+      }
+
       setSuccessMessage("Profil ma'lumotlari muvaffaqiyatli saqlandi!");
       
       // Update local storage user object if needed
@@ -135,14 +168,14 @@ export default function Profile() {
   };
 
   return (
-    <div className="p-6 max-w-5xl mx-auto space-y-8 overflow-y-auto max-h-[calc(100vh-4rem)] custom-scrollbar">
+    <div className="p-3 sm:p-6 max-w-5xl mx-auto space-y-5 sm:space-y-8 overflow-y-auto max-h-[calc(100vh-4rem)] custom-scrollbar">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-extrabold tracking-tight text-white flex items-center gap-2">
+        <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white flex items-center gap-2">
           <User className="text-indigo-400" />
           Foydalanuvchi Profili
         </h1>
-        <p className="text-sm text-slate-400 mt-1 font-medium">
+        <p className="text-xs sm:text-sm text-slate-400 mt-1 font-medium">
           Shaxsiy ma'lumotlaringizni ko'rish, tahrirlash va hisobingizni sozlash
         </p>
       </div>
@@ -206,19 +239,35 @@ export default function Profile() {
             </div>
 
             {/* Quick stats / summary depending on role */}
-            <div className="border-t border-slate-800/80 pt-4 space-y-2 text-left text-xs text-slate-400">
-              <div className="flex justify-between py-1">
+            <div className="border-t border-slate-800/80 pt-4 space-y-2.5 text-left text-xs text-slate-400">
+              <div className="flex justify-between py-1 border-b border-slate-800/40">
                 <span className="font-medium">Foydalanuvchi nomi:</span>
                 <span className="font-mono text-slate-200 font-bold">{user?.username}</span>
               </div>
-              <div className="flex justify-between py-1">
-                <span className="font-medium">Telefon:</span>
+              <div className="flex justify-between py-1 border-b border-slate-800/40">
+                <span className="font-medium">{user?.role === 'STUDENT' ? "O'quvchi Telefoni:" : "Telefon:"}</span>
                 <span className="text-slate-200 font-semibold">{formData.phone || 'Kiritilmagan'}</span>
               </div>
-              {extraInfo?.groupName && (
-                <div className="flex justify-between py-1">
+
+              {user?.role === 'STUDENT' && (
+                <>
+                  <div className="flex justify-between py-1 border-b border-slate-800/40">
+                    <span className="font-medium">Ota-onasi F.I.SH:</span>
+                    <span className="text-slate-200 font-semibold">{formData.parentName || 'Kiritilmagan'}</span>
+                  </div>
+                  <div className="flex justify-between py-1 border-b border-slate-800/40">
+                    <span className="font-medium">Ota-onasi Telefoni:</span>
+                    <span className="text-slate-200 font-semibold">{formData.parentPhone || 'Kiritilmagan'}</span>
+                  </div>
+                </>
+              )}
+
+              {(extraInfo?.groupName || user?.groupName) && (
+                <div className="flex justify-between py-1.5 items-center">
                   <span className="font-medium">Biriktirilgan Guruh:</span>
-                  <span className="text-indigo-400 font-bold uppercase">{extraInfo.groupName}</span>
+                  <span className="px-2.5 py-1 bg-indigo-500/15 border border-indigo-500/30 text-indigo-400 font-extrabold uppercase rounded-lg text-[11px]">
+                    {extraInfo?.groupName || user?.groupName}
+                  </span>
                 </div>
               )}
             </div>
@@ -254,7 +303,7 @@ export default function Profile() {
 
         {/* Right Column: Edit Form (Name, Phone, Password, Avatar) */}
         <div className="lg:col-span-2 space-y-6">
-          <form onSubmit={handleSubmit} className="bg-slate-900 border border-slate-800 rounded-3xl p-7 shadow-xl space-y-6">
+          <form onSubmit={handleSubmit} className="bg-slate-900 border border-slate-800 rounded-3xl p-4 sm:p-7 shadow-xl space-y-5 sm:space-y-6">
             <h3 className="text-lg font-bold text-slate-100 flex items-center gap-2 border-b border-slate-800 pb-3">
               <User size={18} className="text-indigo-400" />
               Shaxsiy Ma'lumotlarni Tahrirlash
@@ -277,10 +326,10 @@ export default function Profile() {
               </div>
 
               {/* Phone */}
-              <div className="sm:col-span-2">
+              <div className={user?.role === 'STUDENT' ? 'sm:col-span-1' : 'sm:col-span-2'}>
                 <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
                   <Phone size={14} className="text-indigo-400" />
-                  Telefon Raqam
+                  {user?.role === 'STUDENT' ? "O'quvchi Telefoni" : "Telefon Raqam"}
                 </label>
                 <input
                   type="text"
@@ -290,6 +339,52 @@ export default function Profile() {
                   className="w-full h-11 px-4 bg-slate-950/60 border border-slate-800 rounded-xl text-slate-200 focus:outline-none focus:border-indigo-500 text-sm font-semibold transition-all"
                 />
               </div>
+
+              {/* Group display for Student */}
+              {user?.role === 'STUDENT' && (
+                <div className="sm:col-span-1">
+                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                    <BookOpen size={14} className="text-indigo-400" />
+                    Biriktirilgan Guruh
+                  </label>
+                  <div className="w-full h-11 px-4 bg-slate-950/40 border border-slate-800/80 rounded-xl text-indigo-400 text-sm font-bold flex items-center">
+                    {extraInfo?.groupName || user?.groupName || "Guruh biriktirilmagan"}
+                  </div>
+                </div>
+              )}
+
+              {/* Parent info for Student */}
+              {user?.role === 'STUDENT' && (
+                <>
+                  <div className="sm:col-span-1">
+                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                      <Users size={14} className="text-purple-400" />
+                      Ota-onasi F.I.SH
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.parentName}
+                      onChange={e => setFormData({ ...formData, parentName: e.target.value })}
+                      placeholder="Masalan: Karim Aliyev (Otasi)"
+                      className="w-full h-11 px-4 bg-slate-950/60 border border-slate-800 rounded-xl text-slate-200 focus:outline-none focus:border-indigo-500 text-sm font-semibold transition-all"
+                    />
+                  </div>
+
+                  <div className="sm:col-span-1">
+                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                      <Phone size={14} className="text-purple-400" />
+                      Ota-onasi Telefoni
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.parentPhone}
+                      onChange={e => setFormData({ ...formData, parentPhone: e.target.value })}
+                      placeholder="+998 90 987 65 43"
+                      className="w-full h-11 px-4 bg-slate-950/60 border border-slate-800 rounded-xl text-slate-200 focus:outline-none focus:border-indigo-500 text-sm font-semibold transition-all"
+                    />
+                  </div>
+                </>
+              )}
             </div>
 
             {/* Password Change Section (Faqat SUPER_ADMIN va BRANCH_ADMIN / ADMINISTRATOR uchun) */}

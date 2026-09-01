@@ -20,13 +20,15 @@ import Reports from './pages/Reports';
 import CashierDesk from './pages/CashierDesk';
 import Expenses from './pages/Expenses';
 import Profile from './pages/Profile';
+import StudentFinance from './pages/StudentFinance';
+import Chat from './pages/Chat';
 import Notifications from './pages/Notifications';
 import DebtorsList from './pages/DebtorsList';
 import AdminDashboard from './pages/AdminDashboard';
 import TestModeBanner from './components/TestModeBanner';
 import FloatingAiChat from './components/FloatingAiChat';
 import DailyBriefingModal from './components/DailyBriefingModal';
-import { LogIn, ShieldAlert, Award, Star, X, AlertTriangle, Search, Sun, Moon, Bell } from 'lucide-react';
+import { LogIn, ShieldAlert, Award, Star, X, AlertTriangle, Search, Sun, Moon, Bell, Menu } from 'lucide-react';
 import axios from 'axios';
 import CustomSelect from './components/CustomSelect';
 
@@ -35,6 +37,7 @@ function AppContent() {
   const { isDark, toggleTheme } = useTheme();
   const [currentPage, setCurrentPage] = useState('dashboard');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [selectedStudentId, setSelectedStudentId] = useState(null);
 
   // Notifications State
@@ -77,7 +80,10 @@ function AppContent() {
     } else if (user?.role === 'CASHIER') {
       setCurrentPage('cashier');
     } else if (user?.role === 'ACCOUNTANT') {
-      setCurrentPage('expenses');
+      // Default to cashier / financial overview on initial load
+      if (!currentPage || currentPage === 'expenses') {
+        setCurrentPage('cashier');
+      }
     }
   }, [user]);
 
@@ -346,6 +352,8 @@ function AppContent() {
     switch (currentPage) {
       case 'dashboard':
         return <Dashboard refreshTrigger={refreshTrigger} />;
+      case 'chat':
+        return <Chat setCurrentPage={setCurrentPage} />;
       case 'schedule':
         return <Schedule refreshTrigger={refreshTrigger} setCurrentPage={setCurrentPage} />;
       case 'leads':
@@ -365,10 +373,19 @@ function AppContent() {
       case 'rooms':
         return <AdminManagement key="rooms" activeSubTab="rooms" refreshTrigger={refreshTrigger} />;
       case 'cashier':
+        if (user?.role === 'STUDENT') {
+          return <StudentFinance setCurrentPage={setCurrentPage} />;
+        }
         return <CashierDesk refreshTrigger={refreshTrigger} />;
       case 'expenses':
+        if (user?.role === 'STUDENT') {
+          return <StudentFinance setCurrentPage={setCurrentPage} />;
+        }
         return <Expenses refreshTrigger={refreshTrigger} />;
       case 'finance':
+        if (user?.role === 'STUDENT') {
+          return <StudentFinance setCurrentPage={setCurrentPage} />;
+        }
         return <Finance refreshTrigger={refreshTrigger} />;
       case 'reports':
         return <Reports refreshTrigger={refreshTrigger} />;
@@ -415,24 +432,40 @@ function AppContent() {
           setCurrentPage={setCurrentPage} 
           collapsed={sidebarCollapsed} 
           setCollapsed={setSidebarCollapsed} 
+          mobileOpen={mobileSidebarOpen}
+          setMobileOpen={setMobileSidebarOpen}
         />
 
       {/* Main Panel Area */}
-      <div className="flex-1 flex flex-col h-screen overflow-hidden">
+      <div className="flex-1 flex flex-col h-screen overflow-hidden min-w-0">
         {/* Top Header bar */}
-        <header className="h-16 border-b border-slate-900 bg-slate-900/30 backdrop-blur px-6 flex items-center justify-between shrink-0">
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-slate-500 font-bold uppercase tracking-wider">Tizim:</span>
-            <span className="text-xs font-bold text-slate-300">Sfera IT Academy Gamifikatsiya Tizimi</span>
+        <header className="h-16 border-b border-slate-900 bg-slate-900/30 backdrop-blur px-3 sm:px-6 flex items-center justify-between shrink-0 gap-2">
+          <div className="flex items-center gap-2.5 min-w-0">
+            {/* Mobile Hamburger Button */}
+            <button
+              onClick={() => setMobileSidebarOpen(true)}
+              className="md:hidden w-9 h-9 rounded-xl bg-slate-800 border border-slate-700/60 flex items-center justify-center text-slate-300 hover:text-white hover:bg-slate-750 transition-all cursor-pointer shrink-0"
+              title="Menyuni ochish"
+            >
+              <Menu size={18} />
+            </button>
+
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="hidden sm:inline text-xs text-slate-500 font-bold uppercase tracking-wider shrink-0">Tizim:</span>
+              <span className="text-xs font-bold text-slate-300 truncate">
+                <span className="hidden sm:inline">Sfera IT Academy </span>Gamifikatsiya Tizimi
+              </span>
+            </div>
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 sm:gap-4 shrink-0">
             {(user.role === 'SUPER_ADMIN' || user.role === 'MENTOR') && (
               <button
                 onClick={handleOpenQuickAward}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-extrabold rounded-xl text-xs shadow-lg shadow-amber-500/10 active:scale-[0.98] transition-all cursor-pointer border-0"
+                className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-extrabold rounded-xl text-xs shadow-lg shadow-amber-500/10 active:scale-[0.98] transition-all cursor-pointer border-0"
               >
-                <Award size={14} /> Tezkor Baholash
+                <Award size={14} /> 
+                <span className="hidden sm:inline">Tezkor Baholash</span>
               </button>
             )}
 
@@ -440,18 +473,18 @@ function AppContent() {
             <button
               onClick={toggleTheme}
               title={isDark ? "Yorug' rejimga o'tish" : "Qorong'u rejimga o'tish"}
-              className="w-9 h-9 rounded-xl bg-slate-800 border border-slate-700/50 flex items-center justify-center text-slate-400 hover:text-amber-400 hover:bg-slate-700 cursor-pointer transition-all"
+              className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-slate-800 border border-slate-700/50 flex items-center justify-center text-slate-400 hover:text-amber-400 hover:bg-slate-700 cursor-pointer transition-all"
             >
-              {isDark ? <Sun size={18} /> : <Moon size={18} />}
+              {isDark ? <Sun size={16} /> : <Moon size={16} />}
             </button>
 
             {/* Notification Bell Button */}
             <button
               onClick={() => setCurrentPage('notifications')}
               title="Bildirishnomalar"
-              className="relative w-9 h-9 rounded-xl bg-slate-800 border border-slate-700/50 flex items-center justify-center text-slate-400 hover:text-indigo-400 hover:bg-slate-700 cursor-pointer transition-all"
+              className="relative w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-slate-800 border border-slate-700/50 flex items-center justify-center text-slate-400 hover:text-indigo-400 hover:bg-slate-700 cursor-pointer transition-all"
             >
-              <Bell size={18} />
+              <Bell size={16} />
               {unreadNotificationsCount > 0 && (
                 <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-rose-500 text-[10px] font-black text-white flex items-center justify-center shadow-lg shadow-rose-500/50 animate-pulse">
                   {unreadNotificationsCount > 99 ? '99+' : unreadNotificationsCount}
@@ -463,10 +496,10 @@ function AppContent() {
             <div 
               onClick={() => setCurrentPage('user-profile')} 
               title="Profilimni ko'rish va tahrirlash" 
-              className="flex items-center gap-3 cursor-pointer group hover:bg-slate-800/40 p-1.5 rounded-xl transition-all"
+              className="flex items-center gap-2 sm:gap-3 cursor-pointer group hover:bg-slate-800/40 p-1 sm:p-1.5 rounded-xl transition-all"
             >
-              <div className="text-right">
-                <span className="block text-xs font-semibold text-slate-400 group-hover:text-indigo-300 transition-colors">
+              <div className="text-right hidden sm:block">
+                <span className="block text-xs font-semibold text-slate-400 group-hover:text-indigo-300 transition-colors max-w-[120px] truncate">
                   {user?.fullName || user?.username || 'Foydalanuvchi'}
                 </span>
                 <span className="inline-block text-[9px] uppercase font-black tracking-wider text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded border border-indigo-500/10 mt-0.5">
@@ -474,9 +507,9 @@ function AppContent() {
                 </span>
               </div>
               {user?.avatarUrl ? (
-                <img src={user.avatarUrl} alt={user?.fullName || 'User'} className="w-9 h-9 rounded-full object-cover border border-indigo-500/40 shadow shrink-0" />
+                <img src={user.avatarUrl} alt={user?.fullName || 'User'} className="w-8 h-8 sm:w-9 sm:h-9 rounded-full object-cover border border-indigo-500/40 shadow shrink-0" />
               ) : (
-                <div className="w-9 h-9 rounded-full bg-slate-800 flex items-center justify-center border border-slate-700/50 text-indigo-400 font-black">
+                <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-slate-800 flex items-center justify-center border border-slate-700/50 text-indigo-400 font-black text-xs sm:text-sm">
                   {user?.fullName?.charAt(0) || user?.username?.charAt(0) || 'U'}
                 </div>
               )}

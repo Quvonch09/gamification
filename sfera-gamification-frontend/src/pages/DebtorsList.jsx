@@ -95,13 +95,13 @@ export default function DebtorsList({ setCurrentPage }) {
   }, [students]);
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-6 animate-fadeIn font-sans">
+    <div className="p-3 sm:p-6 max-w-7xl mx-auto space-y-4 sm:space-y-6 animate-fadeIn font-sans">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-5">
         <div>
-          <h1 className="text-2xl font-black tracking-tight text-white flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 flex items-center justify-center">
-              <AlertCircle size={20} />
+          <h1 className="text-xl sm:text-2xl font-black tracking-tight text-white flex items-center gap-2.5">
+            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 flex items-center justify-center shrink-0">
+              <AlertCircle size={18} />
             </div>
             Qarzdorlik Nazorati
           </h1>
@@ -196,18 +196,18 @@ export default function DebtorsList({ setCurrentPage }) {
         {/* Filters */}
         <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
           {/* Status Tabs */}
-          <div className="flex bg-slate-950 p-1 rounded-xl border border-slate-800 text-xs">
+          <div className="flex bg-slate-950 p-1 rounded-xl border border-slate-800 text-xs overflow-x-auto no-scrollbar w-full sm:w-auto whitespace-nowrap">
             <button
               onClick={() => setFilterStatus('DEBTORS')}
-              className={`px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer ${
+              className={`px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer shrink-0 ${
                 filterStatus === 'DEBTORS' ? 'bg-rose-600 text-white shadow' : 'text-slate-400 hover:text-white'
               }`}
             >
-              Faqat Qarzdorlar ({stats.debtorCount})
+              Qarzdorlar ({stats.debtorCount})
             </button>
             <button
               onClick={() => setFilterStatus('PARTIAL')}
-              className={`px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer ${
+              className={`px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer shrink-0 ${
                 filterStatus === 'PARTIAL' ? 'bg-blue-600 text-white shadow' : 'text-slate-400 hover:text-white'
               }`}
             >
@@ -215,16 +215,16 @@ export default function DebtorsList({ setCurrentPage }) {
             </button>
             <button
               onClick={() => setFilterStatus('PAID')}
-              className={`px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer ${
+              className={`px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer shrink-0 ${
                 filterStatus === 'PAID' ? 'bg-emerald-600 text-white shadow' : 'text-slate-400 hover:text-white'
               }`}
             >
-              To'laganlar ({stats.paidCount})
+              To'liq ({stats.paidCount})
             </button>
             <button
               onClick={() => setFilterStatus('ALL')}
-              className={`px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer ${
-                filterStatus === 'ALL' ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-white'
+              className={`px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer shrink-0 ${
+                filterStatus === 'ALL' ? 'bg-slate-800 text-white' : 'text-slate-400 hover:text-white'
               }`}
             >
               Barchasi ({students.length})

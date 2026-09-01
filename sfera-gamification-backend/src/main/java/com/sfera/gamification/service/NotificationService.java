@@ -168,4 +168,23 @@ public class NotificationService {
                 .build();
         return notificationRepository.save(notif);
     }
+
+    @Transactional
+    public void notifyChatMessage(User sender, User recipient, String roomTitle, String snippet, Long roomId) {
+        if (recipient == null || (sender != null && recipient.getId().equals(sender.getId()))) {
+            return;
+        }
+        String title = roomTitle != null ? "💬 Guruh xabari: " + roomTitle : "💬 Yangi xabar: " + (sender != null ? sender.getFullName() : "Tizim");
+        String message = (sender != null ? sender.getFullName() + ": " : "") + (snippet.length() > 60 ? snippet.substring(0, 57) + "..." : snippet);
+        Notification notif = Notification.builder()
+                .title(title)
+                .message(message)
+                .type("CHAT_MESSAGE")
+                .targetUser(recipient)
+                .read(false)
+                .createdAt(LocalDateTime.now())
+                .metadataJson("{\"chatRoomId\":" + roomId + "}")
+                .build();
+        notificationRepository.save(notif);
+    }
 }

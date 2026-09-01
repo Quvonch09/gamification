@@ -516,7 +516,7 @@ public class StudentController {
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'BRANCH_ADMIN')")
     public ResponseEntity<?> updateStudent(@PathVariable Long id, @RequestBody Map<String, String> request) {
         Student student = studentService.getStudentById(id);
         if (student == null) {
@@ -570,25 +570,53 @@ public class StudentController {
 
         // Update User credentials
         User studentUser = userRepository.findByStudentId(id).orElse(null);
+        String targetUsername = (username != null && !username.trim().isEmpty())
+                ? username.trim().toLowerCase()
+                : (student.getFirstName().replaceAll("[^a-zA-Z0-9]", "").toLowerCase() + "_" + student.getLastName().replaceAll("[^a-zA-Z0-9]", "").toLowerCase());
+
+        User existingUserWithUsername = userRepository.findByUsername(targetUsername).orElse(null);
+
+        if (existingUserWithUsername != null) {
+            if (studentUser != null && !existingUserWithUsername.getId().equals(studentUser.getId())) {
+                if (existingUserWithUsername.getStudent() == null) {
+                    studentUser = existingUserWithUsername;
+                    studentUser.setStudent(student);
+                } else {
+                    return ResponseEntity.badRequest().body("'" + targetUsername + "' logini allaqachon boshqa o'quvchiga biriktirilgan. Iltimos boshqa login kiriting.");
+                }
+            } else if (studentUser == null) {
+                if (existingUserWithUsername.getStudent() == null) {
+                    studentUser = existingUserWithUsername;
+                    studentUser.setStudent(student);
+                } else {
+                    return ResponseEntity.badRequest().body("'" + targetUsername + "' logini allaqachon boshqa o'quvchiga biriktirilgan. Iltimos boshqa login kiriting.");
+                }
+            }
+        }
+
         if (studentUser == null) {
             studentUser = User.builder()
                     .fullName(student.getFirstName() + " " + student.getLastName())
-                    .username(username != null && !username.trim().isEmpty() ? username.trim() : (student.getFirstName().replaceAll("[^a-zA-Z0-9]", "").toLowerCase() + "_" + student.getLastName().replaceAll("[^a-zA-Z0-9]", "").toLowerCase()))
-                    .password(passwordEncoder.encode(password != null && !password.trim().isEmpty() ? password.trim() : "student123"))
+                    .username(targetUsername)
+                    .password(password != null && !password.trim().isEmpty() ? passwordEncoder.encode(password.trim()) : passwordEncoder.encode("student123"))
                     .role("STUDENT")
                     .student(student)
                     .createdAt(LocalDateTime.now())
                     .build();
         } else {
+            studentUser.setStudent(student);
             studentUser.setFullName(student.getFirstName() + " " + student.getLastName());
-            if (username != null && !username.trim().isEmpty()) {
-                studentUser.setUsername(username.trim());
-            }
+            studentUser.setUsername(targetUsername);
             if (password != null && !password.trim().isEmpty()) {
                 studentUser.setPassword(passwordEncoder.encode(password.trim()));
             }
         }
-        userRepository.save(studentUser);
+
+        try {
+            userRepository.save(studentUser);
+        } catch (Exception ex) {
+            return ResponseEntity.badRequest().body("Loginni saqlashda xatolik: ushbu login band bo'lishi mumkin.");
+        }
 
         if (groupIdStr != null && !groupIdStr.isEmpty()) {
             Long groupId = Long.parseLong(groupIdStr);

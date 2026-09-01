@@ -122,20 +122,20 @@ export default function AdminDashboard({ setCurrentPage }) {
   }, [students, groups, rooms, payments, absentees]);
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-6 animate-fadeIn font-sans">
+    <div className="p-3 sm:p-6 max-w-7xl mx-auto space-y-4 sm:space-y-6 animate-fadeIn font-sans">
       {/* Admin Header Banner */}
-      <div className="bg-gradient-to-r from-slate-900 via-indigo-950/40 to-slate-900 border border-slate-800 rounded-3xl p-6 shadow-2xl relative overflow-hidden">
+      <div className="bg-gradient-to-r from-slate-900 via-indigo-950/40 to-slate-900 border border-slate-800 rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-2xl relative overflow-hidden">
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
               <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
                 Administrator Nazorat Paneli
               </span>
-              <span className="text-xs text-slate-400 font-mono">
+              <span className="text-[11px] sm:text-xs text-slate-400 font-mono">
                 {new Date().toLocaleDateString('uz-UZ', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
               </span>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight mt-1.5 flex items-center gap-2">
+            <h1 className="text-xl sm:text-3xl font-black text-white tracking-tight mt-1.5 flex items-center gap-2">
               Xush kelibsiz, {user?.fullName || "Administrator"} 👋
             </h1>
             <p className="text-xs sm:text-sm text-slate-400 mt-1 max-w-2xl">
@@ -256,20 +256,20 @@ export default function AdminDashboard({ setCurrentPage }) {
       </div>
 
       {/* Navigation Sub-Tabs */}
-      <div className="flex flex-wrap gap-2 bg-slate-950 p-1.5 rounded-2xl border border-slate-800 text-xs font-bold">
+      <div className="flex overflow-x-auto no-scrollbar gap-2 bg-slate-950 p-1.5 rounded-2xl border border-slate-800 text-xs font-bold whitespace-nowrap">
         <button
           onClick={() => setActiveTab('OVERVIEW')}
-          className={`px-4 py-2 rounded-xl transition-all cursor-pointer flex items-center gap-2 ${
+          className={`px-3.5 sm:px-4 py-2 rounded-xl transition-all cursor-pointer flex items-center gap-2 shrink-0 ${
             activeTab === 'OVERVIEW' ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-white'
           }`}
         >
           <Clock size={14} />
-          Tezkor Harakatlar Markazi
+          Tezkor Harakatlar
         </button>
 
         <button
           onClick={() => setActiveTab('DEBTORS')}
-          className={`px-4 py-2 rounded-xl transition-all cursor-pointer flex items-center gap-2 ${
+          className={`px-3.5 sm:px-4 py-2 rounded-xl transition-all cursor-pointer flex items-center gap-2 shrink-0 ${
             activeTab === 'DEBTORS' ? 'bg-rose-600 text-white shadow' : 'text-slate-400 hover:text-white'
           }`}
         >
@@ -279,22 +279,22 @@ export default function AdminDashboard({ setCurrentPage }) {
 
         <button
           onClick={() => setActiveTab('PAYMENTS')}
-          className={`px-4 py-2 rounded-xl transition-all cursor-pointer flex items-center gap-2 ${
+          className={`px-3.5 sm:px-4 py-2 rounded-xl transition-all cursor-pointer flex items-center gap-2 shrink-0 ${
             activeTab === 'PAYMENTS' ? 'bg-emerald-600 text-white shadow' : 'text-slate-400 hover:text-white'
           }`}
         >
           <Landmark size={14} />
-          So'nggi Kassa To'lovlari ({payments.length})
+          So'nggi To'lovlar ({payments.length})
         </button>
 
         <button
           onClick={() => setActiveTab('ACADEMIC')}
-          className={`px-4 py-2 rounded-xl transition-all cursor-pointer flex items-center gap-2 ${
+          className={`px-3.5 sm:px-4 py-2 rounded-xl transition-all cursor-pointer flex items-center gap-2 shrink-0 ${
             activeTab === 'ACADEMIC' ? 'bg-blue-600 text-white shadow' : 'text-slate-400 hover:text-white'
           }`}
         >
           <GraduationCap size={14} />
-          Akademik Nazorat Modullari
+          Akademik Nazorat
         </button>
       </div>
 

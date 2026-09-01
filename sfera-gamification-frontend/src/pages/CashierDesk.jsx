@@ -252,13 +252,13 @@ export default function CashierDesk({ refreshTrigger }) {
   };
 
   return (
-    <div className="p-4 md:p-6 space-y-6 max-w-[1600px] mx-auto text-slate-100 font-sans pb-24">
+    <div className="p-3 sm:p-6 space-y-4 sm:space-y-6 max-w-[1600px] mx-auto text-slate-100 font-sans pb-24">
       
       {/* Top Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-900/90 border border-slate-800 p-5 rounded-2xl shadow-xl backdrop-blur-md">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-900/90 border border-slate-800 p-4 sm:p-5 rounded-2xl shadow-xl backdrop-blur-md">
         <div className="flex items-center gap-3">
-          <div className="p-3 bg-gradient-to-br from-emerald-500 to-teal-700 text-white rounded-xl shadow-lg shadow-emerald-500/25">
-            <Receipt className="w-6 h-6" />
+          <div className="p-2.5 sm:p-3 bg-gradient-to-br from-emerald-500 to-teal-700 text-white rounded-xl shadow-lg shadow-emerald-500/25 shrink-0">
+            <Receipt className="w-5 h-5 sm:w-6 sm:h-6" />
           </div>
           <div>
             <h1 className="text-xl md:text-2xl font-bold text-white tracking-tight flex items-center gap-2">
@@ -271,10 +271,10 @@ export default function CashierDesk({ refreshTrigger }) {
         </div>
 
         {/* Tab Navigation Buttons */}
-        <div className="flex items-center gap-2 bg-slate-950/80 p-1 rounded-xl border border-slate-800 self-start md:self-auto overflow-x-auto">
+        <div className="flex items-center gap-1.5 sm:gap-2 bg-slate-950/80 p-1 rounded-xl border border-slate-800 w-full md:w-auto overflow-x-auto no-scrollbar whitespace-nowrap">
           <button
             onClick={() => setActiveTab('PAY_DESK')}
-            className={`px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+            className={`px-3 sm:px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${
               activeTab === 'PAY_DESK'
                 ? 'bg-emerald-600 text-white shadow-md'
                 : 'text-slate-400 hover:text-slate-200'
@@ -286,7 +286,7 @@ export default function CashierDesk({ refreshTrigger }) {
 
           <button
             onClick={() => setActiveTab('DASHBOARD')}
-            className={`px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+            className={`px-3 sm:px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${
               activeTab === 'DASHBOARD'
                 ? 'bg-emerald-600 text-white shadow-md'
                 : 'text-slate-400 hover:text-slate-200'
@@ -298,7 +298,7 @@ export default function CashierDesk({ refreshTrigger }) {
 
           <button
             onClick={() => setActiveTab('STUDENTS')}
-            className={`px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+            className={`px-3 sm:px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${
               activeTab === 'STUDENTS'
                 ? 'bg-emerald-600 text-white shadow-md'
                 : 'text-slate-400 hover:text-slate-200'
@@ -310,7 +310,7 @@ export default function CashierDesk({ refreshTrigger }) {
 
           <button
             onClick={() => setActiveTab('HISTORY')}
-            className={`px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+            className={`px-3 sm:px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${
               activeTab === 'HISTORY'
                 ? 'bg-emerald-600 text-white shadow-md'
                 : 'text-slate-400 hover:text-slate-200'
@@ -322,7 +322,7 @@ export default function CashierDesk({ refreshTrigger }) {
 
           <button
             onClick={() => setActiveTab('PROFILE')}
-            className={`px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+            className={`px-3 sm:px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${
               activeTab === 'PROFILE'
                 ? 'bg-emerald-600 text-white shadow-md'
                 : 'text-slate-400 hover:text-slate-200'

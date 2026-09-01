@@ -23,13 +23,20 @@ import {
   CircleDot,
   User,
   Bell,
-  AlertCircle
+  AlertCircle,
+  MessageSquare,
+  X
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
-export default function Sidebar({ currentPage, setCurrentPage, collapsed, setCollapsed }) {
+export default function Sidebar({ currentPage, setCurrentPage, collapsed, setCollapsed, mobileOpen, setMobileOpen }) {
   const { user, logout } = useAuth();
   const userRole = user?.role || '';
+
+  const navigate = (id) => {
+    setCurrentPage(id);
+    if (setMobileOpen) setMobileOpen(false);
+  };
 
   // Dropdown expansion states
   const [akademikOpen, setAkademikOpen] = useState(true);
@@ -48,9 +55,9 @@ export default function Sidebar({ currentPage, setCurrentPage, collapsed, setCol
   ].filter(i => i.roles.includes(userRole));
 
   const financeSubItems = [
-    { id: 'cashier', name: 'Kassa (To\'lovlar)', icon: Landmark, roles: ['SUPER_ADMIN', 'ADMIN', 'BRANCH_ADMIN', 'CASHIER'] },
+    { id: 'cashier', name: 'Kassa (To\'lovlar)', icon: Landmark, roles: ['SUPER_ADMIN', 'ADMIN', 'BRANCH_ADMIN', 'CASHIER', 'ACCOUNTANT'] },
     { id: 'expenses', name: 'Xarajatlar', icon: ScrollText, roles: ['SUPER_ADMIN', 'ACCOUNTANT'] },
-    { id: 'finance', name: 'Narxlar va Tariflar', icon: Landmark, roles: ['SUPER_ADMIN', 'ACCOUNTANT'] },
+    { id: 'finance', name: userRole === 'STUDENT' ? 'Mening To\'lovlarim' : 'Narxlar va Tariflar', icon: Landmark, roles: ['SUPER_ADMIN', 'ACCOUNTANT', 'STUDENT'] },
     { id: 'reports', name: 'Moliya Hisobotlari', icon: FileSpreadsheet, roles: ['SUPER_ADMIN', 'ACCOUNTANT'] }
   ].filter(i => i.roles.includes(userRole));
 
@@ -58,7 +65,8 @@ export default function Sidebar({ currentPage, setCurrentPage, collapsed, setCol
   const isFinanceActive = financeSubItems.some(i => i.id === currentPage);
 
   const mainItems = [
-    { id: 'dashboard', name: 'Boshqaruv Paneli', icon: LayoutDashboard, roles: ['SUPER_ADMIN', 'ADMIN', 'BRANCH_ADMIN', 'MENTOR', 'STUDENT'] },
+    { id: 'dashboard', name: 'Boshqaruv Paneli', icon: LayoutDashboard, roles: ['SUPER_ADMIN', 'ADMIN', 'BRANCH_ADMIN', 'ACCOUNTANT', 'MENTOR', 'STUDENT'] },
+    { id: 'chat', name: 'Chat & Muloqot', icon: MessageSquare, roles: ['SUPER_ADMIN', 'ADMIN', 'BRANCH_ADMIN', 'ACCOUNTANT', 'CASHIER', 'MENTOR', 'STUDENT', 'OPERATOR'] },
     { id: 'schedule', name: 'Dars Jadvali', icon: CalendarDays, roles: ['SUPER_ADMIN', 'ADMIN', 'BRANCH_ADMIN', 'MENTOR'] },
     { id: 'leads', name: 'Lidlar (CRM)', icon: UserCheck, roles: ['SUPER_ADMIN', 'ADMIN', 'BRANCH_ADMIN', 'OPERATOR'] }
   ].filter(i => i.roles.includes(userRole));
@@ -66,14 +74,14 @@ export default function Sidebar({ currentPage, setCurrentPage, collapsed, setCol
   const studentSectionItems = [
     { id: 'journal', name: 'Baholar Jurnali', icon: BookOpen, roles: ['ADMIN', 'BRANCH_ADMIN', 'MENTOR'] },
     { id: 'davomat', name: 'Davomat', icon: CalendarCheck, roles: ['SUPER_ADMIN', 'ADMIN', 'BRANCH_ADMIN', 'MENTOR', 'STUDENT'] },
-    { id: 'leaderboard', name: 'Reyting (Top)', icon: Trophy, roles: ['SUPER_ADMIN', 'ADMIN', 'BRANCH_ADMIN', 'MENTOR', 'STUDENT'] },
-    { id: 'students', name: 'O\'quvchilar Ro\'yxati', icon: Users, roles: ['SUPER_ADMIN', 'ADMIN', 'BRANCH_ADMIN', 'MENTOR'] },
-    { id: 'debtors', name: 'Qarzdorlik Nazorati', icon: AlertCircle, roles: ['SUPER_ADMIN', 'ADMIN', 'BRANCH_ADMIN', 'CASHIER'] }
+    { id: 'leaderboard', name: 'Reyting (Top)', icon: Trophy, roles: ['SUPER_ADMIN', 'ADMIN', 'BRANCH_ADMIN', 'ACCOUNTANT', 'MENTOR', 'STUDENT'] },
+    { id: 'students', name: 'O\'quvchilar Ro\'yxati', icon: Users, roles: ['SUPER_ADMIN', 'ADMIN', 'BRANCH_ADMIN', 'ACCOUNTANT', 'MENTOR'] },
+    { id: 'debtors', name: 'Qarzdorlik Nazorati', icon: AlertCircle, roles: ['SUPER_ADMIN', 'ADMIN', 'BRANCH_ADMIN', 'CASHIER', 'ACCOUNTANT'] }
   ].filter(i => i.roles.includes(userRole));
 
   const gamificationItems = [
     { id: 'history', name: 'Ballar Tarixi', icon: History, roles: ['SUPER_ADMIN', 'ADMIN', 'BRANCH_ADMIN', 'MENTOR', 'STUDENT'] },
-    { id: 'sfera-ai', name: 'Sfera AI Yordamchi', icon: Sparkles, roles: ['SUPER_ADMIN', 'ADMIN', 'BRANCH_ADMIN', 'MENTOR', 'STUDENT'] }
+    { id: 'sfera-ai', name: 'Sfera AI Yordamchi', icon: Sparkles, roles: ['SUPER_ADMIN', 'ADMIN', 'BRANCH_ADMIN', 'ACCOUNTANT', 'MENTOR', 'STUDENT'] }
   ].filter(i => i.roles.includes(userRole));
 
   const systemItems = [
@@ -83,43 +91,62 @@ export default function Sidebar({ currentPage, setCurrentPage, collapsed, setCol
   ].filter(i => i.roles.includes(userRole));
 
   return (
-    <aside 
-      className={`h-screen bg-slate-900 border-r border-slate-800 text-slate-300 flex flex-col justify-between transition-all duration-300 shadow-2xl relative ${
-        collapsed ? 'w-20' : 'w-64'
-      }`}
-    >
-      <div className="flex flex-col flex-1 min-h-0">
-        {/* Header/Logo */}
-        <div className="h-16 flex items-center justify-between px-4 border-b border-slate-800 shrink-0">
-          {!collapsed ? (
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center font-bold text-white shadow-lg shadow-indigo-500/30">
+    <>
+      {/* Mobile Backdrop Overlay */}
+      {mobileOpen && (
+        <div 
+          onClick={() => setMobileOpen && setMobileOpen(false)}
+          className="fixed inset-0 bg-slate-950/80 backdrop-blur-xs z-40 md:hidden animate-fadeIn"
+        />
+      )}
+
+      <aside 
+        className={`h-screen bg-slate-900 border-r border-slate-800 text-slate-300 flex flex-col justify-between transition-all duration-300 shadow-2xl z-50 fixed inset-y-0 left-0 md:static ${
+          mobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
+        } ${collapsed ? 'md:w-20' : 'md:w-64'} w-72 max-w-[85vw]`}
+      >
+        <div className="flex flex-col flex-1 min-h-0">
+          {/* Header/Logo */}
+          <div className="h-16 flex items-center justify-between px-4 border-b border-slate-800 shrink-0">
+            {!collapsed ? (
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center font-bold text-white shadow-lg shadow-indigo-500/30">
+                  S
+                </div>
+                <span className="font-extrabold text-lg tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-cyan-400">
+                  SFERA
+                </span>
+              </div>
+            ) : (
+              <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center font-bold text-white shadow-lg shadow-indigo-500/30 mx-auto">
                 S
               </div>
-              <span className="font-extrabold text-lg tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-cyan-400">
-                SFERA
-              </span>
-            </div>
-          ) : (
-            <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center font-bold text-white shadow-lg shadow-indigo-500/30 mx-auto">
-              S
-            </div>
-          )}
-          
-          <button 
-            onClick={() => setCollapsed(!collapsed)}
-            className="absolute -right-3 top-5 w-6 h-6 rounded-full bg-indigo-600 hover:bg-indigo-500 flex items-center justify-center text-white border border-slate-800 shadow-lg cursor-pointer z-50"
-          >
-            {collapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
-          </button>
-        </div>
+            )}
+            
+            {/* Mobile Close Button */}
+            <button 
+              onClick={() => setMobileOpen && setMobileOpen(false)}
+              className="md:hidden text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 cursor-pointer"
+              title="Yopish"
+            >
+              <X size={20} />
+            </button>
 
-        {/* User Card */}
-        <div 
-          onClick={() => setCurrentPage('user-profile')}
-          title="Profilimni ko'rish va tahrirlash"
-          className={`p-3 mx-2 my-2 rounded-xl border border-slate-800/50 hover:border-indigo-500/40 hover:bg-slate-800/40 cursor-pointer flex items-center gap-3 overflow-hidden shrink-0 transition-all ${collapsed ? 'justify-center mx-1' : ''}`}
-        >
+            {/* Desktop Collapse Toggle */}
+            <button 
+              onClick={() => setCollapsed(!collapsed)}
+              className="hidden md:flex absolute -right-3 top-5 w-6 h-6 rounded-full bg-indigo-600 hover:bg-indigo-500 items-center justify-center text-white border border-slate-800 shadow-lg cursor-pointer z-50"
+            >
+              {collapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
+            </button>
+          </div>
+
+          {/* User Card */}
+          <div 
+            onClick={() => navigate('user-profile')}
+            title="Profilimni ko'rish va tahrirlash"
+            className={`p-3 mx-2 my-2 rounded-xl border border-slate-800/50 hover:border-indigo-500/40 hover:bg-slate-800/40 cursor-pointer flex items-center gap-3 overflow-hidden shrink-0 transition-all ${collapsed ? 'justify-center mx-1' : ''}`}
+          >
           {user?.avatarUrl ? (
             <img src={user.avatarUrl} alt={user.fullName} className="w-10 h-10 rounded-full object-cover border border-indigo-500/40 shadow shrink-0" />
           ) : (
@@ -154,7 +181,7 @@ export default function Sidebar({ currentPage, setCurrentPage, collapsed, setCol
                 return (
                   <button
                     key={item.id}
-                    onClick={() => setCurrentPage(item.id)}
+                    onClick={() => navigate(item.id)}
                     title={collapsed ? item.name : undefined}
                     className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150 group cursor-pointer ${
                       isActive 
@@ -184,7 +211,7 @@ export default function Sidebar({ currentPage, setCurrentPage, collapsed, setCol
                 return (
                   <button
                     key={item.id}
-                    onClick={() => setCurrentPage(item.id)}
+                    onClick={() => navigate(item.id)}
                     title={collapsed ? item.name : undefined}
                     className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150 group cursor-pointer ${
                       isActive 
@@ -237,7 +264,7 @@ export default function Sidebar({ currentPage, setCurrentPage, collapsed, setCol
                         return (
                           <button
                             key={sub.id}
-                            onClick={() => setCurrentPage(sub.id)}
+                            onClick={() => navigate(sub.id)}
                             className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${
                               isSubActive
                                 ? 'bg-indigo-600 text-white font-bold shadow-md shadow-indigo-600/20'
@@ -256,7 +283,7 @@ export default function Sidebar({ currentPage, setCurrentPage, collapsed, setCol
                 /* Collapsed Icon + Floating Flyout */
                 <div className="relative">
                   <button
-                    onClick={() => setCurrentPage(academicSubItems[0]?.id || 'groups')}
+                    onClick={() => navigate(academicSubItems[0]?.id || 'groups')}
                     title="Akademik"
                     className={`w-full flex items-center justify-center p-2.5 rounded-lg transition-all ${
                       isAcademicActive ? 'bg-indigo-600 text-white' : 'hover:bg-slate-850 text-slate-400 hover:text-white'
@@ -277,7 +304,7 @@ export default function Sidebar({ currentPage, setCurrentPage, collapsed, setCol
                           <button
                             key={sub.id}
                             onClick={() => {
-                              setCurrentPage(sub.id);
+                              navigate(sub.id);
                               setHoveredSection(null);
                             }}
                             className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs font-semibold text-left transition-all ${
@@ -333,7 +360,7 @@ export default function Sidebar({ currentPage, setCurrentPage, collapsed, setCol
                         return (
                           <button
                             key={sub.id}
-                            onClick={() => setCurrentPage(sub.id)}
+                            onClick={() => navigate(sub.id)}
                             className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${
                               isSubActive
                                 ? 'bg-emerald-600 text-white font-bold shadow-md shadow-emerald-600/20'
@@ -352,7 +379,7 @@ export default function Sidebar({ currentPage, setCurrentPage, collapsed, setCol
                 /* Collapsed Icon + Floating Flyout */
                 <div className="relative">
                   <button
-                    onClick={() => setCurrentPage(financeSubItems[0]?.id || 'cashier')}
+                    onClick={() => navigate(financeSubItems[0]?.id || 'cashier')}
                     title="Moliya"
                     className={`w-full flex items-center justify-center p-2.5 rounded-lg transition-all ${
                       isFinanceActive ? 'bg-emerald-600 text-white' : 'hover:bg-slate-850 text-slate-400 hover:text-white'
@@ -373,7 +400,7 @@ export default function Sidebar({ currentPage, setCurrentPage, collapsed, setCol
                           <button
                             key={sub.id}
                             onClick={() => {
-                              setCurrentPage(sub.id);
+                              navigate(sub.id);
                               setHoveredSection(null);
                             }}
                             className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs font-semibold text-left transition-all ${
@@ -406,7 +433,7 @@ export default function Sidebar({ currentPage, setCurrentPage, collapsed, setCol
                 return (
                   <button
                     key={item.id}
-                    onClick={() => setCurrentPage(item.id)}
+                    onClick={() => navigate(item.id)}
                     title={collapsed ? item.name : undefined}
                     className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150 group cursor-pointer ${
                       isActive 
@@ -436,7 +463,7 @@ export default function Sidebar({ currentPage, setCurrentPage, collapsed, setCol
                 return (
                   <button
                     key={item.id}
-                    onClick={() => setCurrentPage(item.id)}
+                    onClick={() => navigate(item.id)}
                     title={collapsed ? item.name : undefined}
                     className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150 group cursor-pointer ${
                       isActive 
@@ -458,7 +485,10 @@ export default function Sidebar({ currentPage, setCurrentPage, collapsed, setCol
       {/* Footer / Log out */}
       <div className="p-3 border-t border-slate-800 shrink-0">
         <button
-          onClick={logout}
+          onClick={() => {
+            if (setMobileOpen) setMobileOpen(false);
+            logout();
+          }}
           className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-rose-400 hover:bg-rose-500/10 transition-all duration-150 cursor-pointer ${
             collapsed ? 'justify-center' : ''
           }`}
@@ -468,5 +498,6 @@ export default function Sidebar({ currentPage, setCurrentPage, collapsed, setCol
         </button>
       </div>
     </aside>
+    </>
   );
 }

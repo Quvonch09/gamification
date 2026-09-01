@@ -25,7 +25,8 @@ import {
   ArrowRightLeft,
   FolderGit,
   CheckSquare,
-  Square
+  Square,
+  RefreshCw
 } from 'lucide-react';
 import MentorMonitor from './MentorMonitor';
 import { useAuth } from '../context/AuthContext';
@@ -60,6 +61,7 @@ export default function AdminManagement({ activeSubTab }) {
 
   // Modals state
   const [showStudentModal, setShowStudentModal] = useState(false);
+  const [savingStudent, setSavingStudent] = useState(false);
   const [showGroupModal, setShowGroupModal] = useState(false);
   const [showRoomModal, setShowRoomModal] = useState(false);
   const [showMentorModal, setShowMentorModal] = useState(false);
@@ -291,6 +293,7 @@ export default function AdminManagement({ activeSubTab }) {
     e.preventDefault();
     setErrorMessage('');
     setSuccessMessage('');
+    setSavingStudent(true);
 
     let formPayload = { ...studentForm };
     if (formPayload.customPrice) {
@@ -309,11 +312,24 @@ export default function AdminManagement({ activeSubTab }) {
         setSuccessMessage(editingItem ? "O'quvchi ma'lumotlari yangilandi!" : "Yangi o'quvchi muvaffaqiyatli qo'shildi!");
         refreshData();
         loadAllData();
-        setTimeout(handleCloseModals, 1200);
+        setTimeout(handleCloseModals, 1000);
       })
       .catch(err => {
         console.error(err);
-        setErrorMessage("Amalni bajarishda xatolik yuz berdi.");
+        let msg = "Amalni bajarishda xatolik yuz berdi.";
+        if (err.response?.status === 403) {
+          msg = "Ushbu login (username) allaqachon boshqa talabaga tegishli yoki ruxsat cheklangan. Iltimos, boshqa login kiriting.";
+        } else if (err.response?.status === 400) {
+          msg = (typeof err.response?.data === 'string' && err.response.data.trim())
+            ? err.response.data
+            : err.response?.data?.message || "Kiritilgan ma'lumotlar noto'g'ri.";
+        } else if (typeof err.response?.data === 'string' && err.response.data.trim()) {
+          msg = err.response.data;
+        }
+        setErrorMessage(msg);
+      })
+      .finally(() => {
+        setSavingStudent(false);
       });
   };
 
@@ -1626,8 +1642,22 @@ export default function AdminManagement({ activeSubTab }) {
             </div>
 
             <div className="pt-4 flex gap-3">
-              <button type="button" onClick={handleCloseModals} className="flex-1 py-2.5 bg-slate-800 hover:bg-slate-750 text-slate-300 font-semibold rounded-lg text-xs cursor-pointer border border-slate-700/50">Bekor qilish</button>
-              <button type="submit" className="flex-1 py-2.5 bg-indigo-650 hover:bg-indigo-500 text-white font-semibold rounded-lg text-xs cursor-pointer shadow shadow-indigo-500/10">Saqlash</button>
+              <button 
+                type="button" 
+                onClick={handleCloseModals} 
+                disabled={savingStudent}
+                className="flex-1 py-2.5 bg-slate-800 hover:bg-slate-750 text-slate-300 font-semibold rounded-lg text-xs cursor-pointer border border-slate-700/50"
+              >
+                Bekor qilish
+              </button>
+              <button 
+                type="submit" 
+                disabled={savingStudent}
+                className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-semibold rounded-lg text-xs cursor-pointer shadow shadow-indigo-500/10 flex items-center justify-center gap-2"
+              >
+                {savingStudent && <RefreshCw size={14} className="animate-spin" />}
+                <span>{savingStudent ? "Saqlanmoqda..." : "Saqlash"}</span>
+              </button>
             </div>
           </form>
         </div>

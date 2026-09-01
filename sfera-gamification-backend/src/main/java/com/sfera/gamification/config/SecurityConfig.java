@@ -77,7 +77,7 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST, "/api/courses").hasRole("SUPER_ADMIN")
                 .requestMatchers("/api/admin-users/**").hasRole("SUPER_ADMIN")
                 // CRM & Academic endpoints
-                .requestMatchers(HttpMethod.GET, "/api/rooms/**").hasAnyRole("SUPER_ADMIN", "ADMIN", "BRANCH_ADMIN", "MENTOR", "STUDENT")
+                .requestMatchers(HttpMethod.GET, "/api/rooms/**").hasAnyRole("SUPER_ADMIN", "ADMIN", "BRANCH_ADMIN", "ACCOUNTANT", "CASHIER", "MENTOR", "STUDENT")
                 .requestMatchers("/api/rooms/**").hasAnyRole("SUPER_ADMIN", "ADMIN", "BRANCH_ADMIN")
                 .requestMatchers("/api/branches/**").hasAnyRole("SUPER_ADMIN", "ADMIN", "BRANCH_ADMIN", "OPERATOR")
                 .requestMatchers("/api/leads/**").hasAnyRole("SUPER_ADMIN", "ADMIN", "BRANCH_ADMIN", "OPERATOR")
@@ -93,6 +93,9 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.DELETE, "/api/lesson-plans/**").hasAnyRole("SUPER_ADMIN", "BRANCH_ADMIN", "ADMIN", "MENTOR")
                 // AI chat endpoint
                 .requestMatchers("/api/ai/**").hasAnyRole("SUPER_ADMIN", "BRANCH_ADMIN", "ADMIN", "MENTOR", "STUDENT")
+                // Internal chat endpoints
+                .requestMatchers("/api/chat/admin/**").hasAnyRole("SUPER_ADMIN", "ADMIN", "BRANCH_ADMIN")
+                .requestMatchers("/api/chat/**").authenticated()
                 // All others require authentication
                 .anyRequest().authenticated()
             );

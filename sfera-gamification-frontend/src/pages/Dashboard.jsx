@@ -13,7 +13,10 @@ import {
   TrendingUp,
   User,
   Calendar,
-  CalendarDays
+  CalendarDays,
+  Landmark,
+  ArrowRight,
+  CheckCircle2
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import AdminDashboard from './AdminDashboard';
@@ -29,6 +32,7 @@ export default function Dashboard({ refreshTrigger, setCurrentPage }) {
 
   const [stats, setStats] = useState(null);
   const [studentData, setStudentData] = useState(null);
+  const [studentFinance, setStudentFinance] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -48,6 +52,17 @@ export default function Dashboard({ refreshTrigger, setCurrentPage }) {
         .finally(() => {
           setLoading(false);
         });
+
+      // Load financial data for student
+      axios.get('/api/students')
+        .then(res => {
+          const list = res.data || [];
+          const myRec = list.find(s => String(s.id) === String(studentId)) || list.find(s => s.username === user?.username);
+          if (myRec) {
+            setStudentFinance(myRec);
+          }
+        })
+        .catch(() => {});
     } else if (!isStudent) {
       fetchStats();
     } else {
@@ -183,6 +198,56 @@ export default function Dashboard({ refreshTrigger, setCurrentPage }) {
             </div>
           </div>
         </div>
+
+        {/* Student Personal Financial Status Card */}
+        {studentFinance && (
+          <div className="bg-gradient-to-r from-slate-900 via-emerald-950/20 to-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-5 shadow-xl flex flex-col md:flex-row items-center justify-between gap-4 animate-fadeIn">
+            <div className="flex items-center gap-3.5 w-full md:w-auto">
+              <div className="w-11 h-11 rounded-2xl bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 flex items-center justify-center shrink-0 shadow-lg shadow-emerald-500/10">
+                <Landmark size={22} />
+              </div>
+              <div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h3 className="text-base font-bold text-white">Mening To'lovlarim & Moliya</h3>
+                  <span className={`text-[10px] font-black px-2 py-0.5 rounded-full border ${
+                    studentFinance.balanceDue === 0 
+                      ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' 
+                      : 'bg-rose-500/20 text-rose-300 border-rose-500/30'
+                  }`}>
+                    {studentFinance.balanceDue === 0 ? "Qarzdorlik yo'q ✓" : "Qarzdorlik mavjud ⚠️"}
+                  </span>
+                </div>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  Kurs: {studentFinance.groupName || studentData.groupName} — Oylik to'lov: {Number(studentFinance.coursePrice || 0).toLocaleString()} UZS
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-4 sm:gap-6 w-full md:w-auto justify-between md:justify-end border-t md:border-t-0 pt-3 md:pt-0 border-slate-800">
+              <div>
+                <span className="text-[10px] font-bold text-slate-500 uppercase block">Jami To'langan</span>
+                <span className="text-sm sm:text-base font-black text-emerald-400 font-mono">
+                  {Number(studentFinance.totalPaid || 0).toLocaleString()} UZS
+                </span>
+              </div>
+              <div>
+                <span className="text-[10px] font-bold text-slate-500 uppercase block">Qarzdorlik</span>
+                <span className={`text-sm sm:text-base font-black font-mono ${
+                  studentFinance.balanceDue > 0 ? 'text-rose-400' : 'text-emerald-400'
+                }`}>
+                  {Number(studentFinance.balanceDue || 0).toLocaleString()} UZS
+                </span>
+              </div>
+              <button
+                onClick={() => setCurrentPage && setCurrentPage('finance')}
+                className="px-3.5 sm:px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition-all shadow-lg shadow-emerald-600/20 cursor-pointer flex items-center gap-1.5 shrink-0"
+              >
+                <span>To'liq Tarix</span>
+                <ArrowRight size={13} />
+              </button>
+            </div>
+          </div>
+        )}
 
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
           <div className="xl:col-span-2 bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-lg flex flex-col justify-between animate-fadeIn">
