@@ -57,6 +57,7 @@ public class GroupService {
         return groupStudentRepository.findByGroupIdAndStatus(groupId, "ACTIVE")
                 .stream()
                 .map(GroupStudent::getStudent)
+                .filter(s -> s != null && "ACTIVE".equalsIgnoreCase(s.getStatus()))
                 .collect(Collectors.toList());
     }
 

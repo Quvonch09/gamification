@@ -120,6 +120,7 @@ public class GroupController {
         List<Student> students = groupService.getGroupStudents(id);
         List<Map<String, Object>> list = new ArrayList<>();
         for (Student s : students) {
+            if (s == null || !"ACTIVE".equalsIgnoreCase(s.getStatus())) continue;
             Map<String, Object> map = new HashMap<>();
             map.put("id", s.getId());
             map.put("firstName", s.getFirstName());
